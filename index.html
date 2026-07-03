@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Compliance Login</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="login-shell">
+      <div class="login-card">
+        <h1>Compliance Portal</h1>
+        <p>Sign in with your user credentials.</p>
+        <form id="loginForm">
+          <label for="email">User ID</label>
+          <input id="email" name="email" type="email" placeholder="Enter your user ID" required />
+
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" placeholder="Enter your password" required />
+
+          <button type="submit">Log In</button>
+          <div id="validationMessage" class="message"></div>
+        </form>
+      </div>
+    </div>
+
+    <script src="login.js"></script>
+  </body>
+</html>
