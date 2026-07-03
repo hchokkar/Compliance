@@ -1,8 +1,8 @@
 :root {
   color-scheme: dark;
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: #090e1b;
-  color: #e2e8f0;
+  background: #0f172a;
+  color: #f8fafc;
 }
 
 * {
@@ -16,12 +16,12 @@ body {
 }
 
 body {
-  background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 20%),
-    radial-gradient(circle at 80% 15%, rgba(99, 102, 241, 0.12), transparent 18%),
-    linear-gradient(180deg, #050811 0%, #081421 100%);
+  background: radial-gradient(circle at top left, rgba(248, 113, 15, 0.14), transparent 18%),
+    radial-gradient(circle at 85% 20%, rgba(239, 68, 68, 0.12), transparent 18%),
+    linear-gradient(180deg, #111827 0%, #0f172a 100%);
   padding: 24px;
   min-height: 100vh;
-  color: #e2e8f0;
+  color: #f8fafc;
 }
 
 button,
@@ -44,9 +44,9 @@ textarea {
   inset: 0;
   pointer-events: none;
   background-image:
-    radial-gradient(circle at 12% 14%, rgba(56, 189, 248, 0.12), transparent 18%),
-    radial-gradient(circle at 88% 18%, rgba(168, 85, 247, 0.08), transparent 16%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 48%, rgba(7, 12, 25, 0.92));
+    radial-gradient(circle at 12% 14%, rgba(248, 113, 15, 0.14), transparent 18%),
+    radial-gradient(circle at 88% 18%, rgba(239, 68, 68, 0.10), transparent 16%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 48%, rgba(15, 23, 42, 0.92));
   opacity: 0.9;
 }
 .dashboard-shell > * {
@@ -56,8 +56,8 @@ textarea {
 
 .login-card,
 .card {
-  background: rgba(7, 12, 25, 0.94);
-  border: 1px solid rgba(56, 189, 248, 0.16);
+  background: rgba(15, 23, 42, 0.94);
+  border: 1px solid rgba(248, 113, 15, 0.18);
   border-radius: 24px;
   box-shadow: 0 32px 100px rgba(0, 0, 0, 0.28);
   backdrop-filter: blur(14px);
@@ -67,7 +67,7 @@ textarea {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.14), transparent 36%);
+  background: linear-gradient(135deg, rgba(248, 113, 15, 0.14), transparent 36%);
   pointer-events: none;
   opacity: 0.35;
 }
@@ -77,8 +77,8 @@ textarea {
   width: min(100%, 460px);
   margin: 0 auto;
   padding: 36px;
-  background: rgba(7, 14, 33, 0.92);
-  border: 1px solid rgba(56, 189, 248, 0.18);
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(248, 113, 15, 0.18);
   border-radius: 32px;
   backdrop-filter: blur(20px);
 }
@@ -99,8 +99,8 @@ textarea {
   font-size: 1.35rem;
   font-weight: 800;
   color: #ffffff;
-  background: linear-gradient(135deg, #38bdf8, #6366f1);
-  box-shadow: 0 18px 40px rgba(56, 189, 248, 0.28);
+  background: linear-gradient(135deg, #fb923c, #ef4444);
+  box-shadow: 0 18px 40px rgba(239, 68, 68, 0.28);
 }
 
 .login-panel h1,
@@ -113,7 +113,7 @@ textarea {
 .login-panel p,
 .app-bar p {
   margin: 8px 0 0;
-  color: #94a3b8;
+  color: #e5e7eb;
 }
 
 .login-alert {
@@ -122,8 +122,8 @@ textarea {
   gap: 12px;
   padding: 16px;
   margin-bottom: 24px;
-  border: 1px solid rgba(56, 189, 248, 0.18);
-  background: rgba(56, 189, 248, 0.06);
+  border: 1px solid rgba(248, 113, 15, 0.18);
+  background: rgba(248, 113, 15, 0.08);
   border-radius: 20px;
 }
 
@@ -131,9 +131,9 @@ textarea {
   width: 10px;
   height: 10px;
   border-radius: 999px;
-  background: #38bdf8;
+  background: #fb923c;
   margin-top: 6px;
-  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.12);
+  box-shadow: 0 0 0 4px rgba(251, 146, 60, 0.24);
 }
 
 .login-form {
@@ -149,7 +149,7 @@ textarea {
 
 .login-form input {
   width: 100%;
-  border: 1px solid rgba(148, 163, 184, 0.18);
+  border: 1px solid rgba(248, 113, 15, 0.18);
   background: rgba(15, 23, 42, 0.95);
   color: #f8fafc;
   border-radius: 14px;
@@ -162,7 +162,7 @@ textarea {
 .login-form input:focus {
   outline: none;
   transform: translateY(-1px);
-  border-color: #38bdf8;
+  border-color: #fb923c;
   background: rgba(15, 23, 42, 1);
 }
 
@@ -183,11 +183,11 @@ textarea {
 }
 
 .remember-me input {
-  accent-color: #38bdf8;
+  accent-color: #fb923c;
 }
 
 .help-link {
-  color: #38bdf8;
+  color: #fb923c;
   text-decoration: none;
 }
 
@@ -198,7 +198,7 @@ textarea {
 .primary-btn {
   width: 100%;
   border: none;
-  background: linear-gradient(135deg, #38bdf8, #6366f1);
+  background: linear-gradient(135deg, #fb923c, #ef4444);
   color: #ffffff;
   font-weight: 700;
   border-radius: 16px;
@@ -206,11 +206,11 @@ textarea {
   font-size: 1rem;
   cursor: pointer;
   transition: background 0.2s ease, transform 0.2s ease;
-  box-shadow: 0 20px 50px rgba(56, 189, 248, 0.18);
+  box-shadow: 0 20px 50px rgba(239, 68, 68, 0.18);
 }
 
 .primary-btn:hover {
-  background: linear-gradient(135deg, #22c55e, #38bdf8);
+  background: linear-gradient(135deg, #f97316, #dc2626);
   transform: translateY(-1px);
 }
 
@@ -229,6 +229,186 @@ textarea {
   }
 }
 
+body.login-page {
+  background: radial-gradient(circle at top left, rgba(251, 146, 60, 0.16), transparent 24%),
+    radial-gradient(circle at 92% 12%, rgba(239, 68, 68, 0.12), transparent 18%),
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  color: #111827;
+}
+
+body.login-page .login-shell {
+  width: min(100%, 680px);
+  margin: 0 auto;
+  padding: 48px 20px;
+}
+
+body.login-page .login-panel {
+  background: #ffffff;
+  border: 1px solid rgba(209, 213, 219, 0.9);
+  box-shadow: 0 26px 80px rgba(15, 23, 42, 0.12);
+  color: #111827;
+  position: relative;
+  overflow: visible;
+}
+
+body.login-page .login-panel::before {
+  content: none;
+}
+
+body.login-page .login-panel::after {
+  content: none;
+}
+
+body.login-page .login-brand h1,
+body.login-page .login-brand p,
+body.login-page .login-alert p,
+body.login-page .security-footnote p,
+body.login-page label {
+  color: #111827;
+}
+
+body.login-page .brand-mark {
+  background: linear-gradient(135deg, #fb923c, #ef4444);
+  box-shadow: 0 18px 40px rgba(239, 68, 68, 0.24);
+}
+
+body.login-page .login-alert {
+  background: rgba(254, 226, 226, 0.9);
+  border-color: rgba(248, 113, 15, 0.16);
+  color: #9f1239;
+}
+
+body.login-page .alert-dot {
+  background: #ef4444;
+  box-shadow: 0 0 0 4px rgba(248, 113, 15, 0.14);
+}
+
+body.login-page .login-form label {
+  color: #475569;
+}
+
+body.login-page .login-form input {
+  background: #f8fafc;
+  color: #111827;
+  border-color: rgba(209, 213, 219, 0.9);
+}
+
+body.login-page .login-form input:focus {
+  border-color: #fb923c;
+  box-shadow: 0 0 0 4px rgba(251, 146, 60, 0.16);
+  background: #ffffff;
+}
+
+body.login-page .login-meta {
+  color: #475569;
+}
+
+body.login-page .remember-me input {
+  accent-color: #ef4444;
+}
+
+body.login-page .help-link {
+  color: #ef4444;
+}
+
+body.login-page .primary-btn {
+  background: linear-gradient(135deg, #ef4444, #fb923c);
+  box-shadow: 0 20px 50px rgba(239, 68, 68, 0.18);
+}
+
+body.login-page .primary-btn:hover {
+  background: linear-gradient(135deg, #f97316, #dc2626);
+}
+
+body.login-page .message {
+  color: #b91c1c;
+}
+
+body.login-page .security-footnote {
+  color: #64748b;
+}
+
+body.login-page .infra-graphic {
+  position: absolute;
+  top: 30px;
+  right: 30px;
+  width: 120px;
+  height: 120px;
+  pointer-events: none;
+}
+
+body.login-page .infra-graphic .line {
+  position: absolute;
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(248, 113, 15, 0.9), rgba(239, 68, 68, 0.8));
+}
+
+body.login-page .infra-graphic .line-1 {
+  top: 14px;
+  left: 18px;
+  width: 72px;
+  height: 4px;
+  transform-origin: left center;
+  transform: rotate(10deg);
+}
+
+body.login-page .infra-graphic .line-2 {
+  top: 46px;
+  left: 18px;
+  width: 86px;
+  height: 4px;
+  transform-origin: left center;
+  transform: rotate(-24deg);
+}
+
+body.login-page .infra-graphic .line-3 {
+  top: 78px;
+  left: 18px;
+  width: 70px;
+  height: 4px;
+  transform-origin: left center;
+  transform: rotate(28deg);
+}
+
+body.login-page .infra-graphic .node {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #ef4444;
+  box-shadow: 0 0 0 8px rgba(248, 113, 15, 0.08);
+  animation: pulse 2.6s ease-in-out infinite;
+}
+
+body.login-page .infra-graphic .core {
+  top: 38px;
+  left: 44px;
+}
+
+body.login-page .infra-graphic .node-a {
+  top: 12px;
+  left: 72px;
+  animation-delay: 0.2s;
+}
+
+body.login-page .infra-graphic .node-b {
+  top: 86px;
+  left: 22px;
+  animation-delay: 0.4s;
+}
+
+body.login-page .infra-graphic .node-c {
+  top: 72px;
+  left: 88px;
+  animation-delay: 0.6s;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.18); opacity: 0.7; }
+}
+
 .dashboard-hero {
   margin-bottom: 24px;
 }
@@ -240,7 +420,7 @@ textarea {
   gap: 24px;
   padding: 28px 30px;
   background: linear-gradient(180deg, rgba(10, 18, 35, 0.98), rgba(7, 12, 25, 0.96));
-  border: 1px solid rgba(56, 189, 248, 0.18);
+  border: 1px solid rgba(248, 113, 15, 0.18);
   border-radius: 26px;
 }
 
@@ -252,7 +432,7 @@ textarea {
 .hero-copy .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.2em;
-  color: #7dd3fc;
+  color: #fb923c;
   font-size: 0.8rem;
   margin-bottom: 14px;
 }
@@ -261,13 +441,13 @@ textarea {
   margin: 0;
   font-size: clamp(1.9rem, 2.5vw, 2.8rem);
   line-height: 1.05;
-  color: #f8fafc;
+  color: #ffffff;
 }
 
 .hero-text {
   margin-top: 16px;
   max-width: 640px;
-  color: #cbd5e1;
+  color: #e5e7eb;
   line-height: 1.8;
 }
 
@@ -280,14 +460,14 @@ textarea {
 
 .hero-metrics div {
   padding: 18px 20px;
-  background: rgba(15, 23, 42, 0.9);
-  border: 1px solid rgba(56, 189, 248, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(248, 113, 15, 0.14);
   border-radius: 18px;
 }
 
 .hero-metrics span {
   display: block;
-  color: #94a3b8;
+  color: #cbd5e1;
   font-size: 0.85rem;
   letter-spacing: 0.06em;
   margin-bottom: 8px;
@@ -296,7 +476,7 @@ textarea {
 .hero-metrics strong {
   display: block;
   font-size: 1.15rem;
-  color: #e2e8f0;
+  color: #ffffff;
 }
 
 .chart-area {
@@ -314,7 +494,7 @@ textarea {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 18px;
-  border-bottom: 1px solid rgba(56, 189, 248, 0.08);
+  border-bottom: 1px solid rgba(248, 113, 15, 0.08);
   padding-bottom: 14px;
 }
 
@@ -326,7 +506,7 @@ textarea {
 
 .kpi-card {
   background: linear-gradient(180deg, rgba(10, 18, 35, 0.96), rgba(7, 12, 25, 0.96));
-  border: 1px solid rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(248, 113, 15, 0.12);
   border-radius: 20px;
   padding: 20px;
   position: relative;
@@ -339,7 +519,7 @@ textarea {
   inset: -18px 0 0 auto;
   width: 180px;
   height: 180px;
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.14), transparent 60%);
+  background: radial-gradient(circle, rgba(248, 113, 15, 0.14), transparent 60%);
   filter: blur(14px);
   pointer-events: none;
 }
@@ -348,7 +528,7 @@ textarea {
   min-width: 220px;
   background: rgba(15, 23, 42, 0.96);
   color: #f8fafc;
-  border: 1px solid rgba(56, 189, 248, 0.2);
+  border: 1px solid rgba(248, 113, 15, 0.18);
   border-radius: 14px;
   padding: 12px 14px;
 }
@@ -407,14 +587,14 @@ input {
 input:focus,
 button:focus {
   outline: none;
-  border-color: #38bdf8;
-  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.14);
+  border-color: #fb923c;
+  box-shadow: 0 0 0 4px rgba(251, 146, 60, 0.18);
 }
 
 button {
   border: none;
-  color: #0f172a;
-  background: #38bdf8;
+  color: #ffffff;
+  background: #ef4444;
   font-weight: 700;
   border-radius: 14px;
   padding: 14px 16px;
@@ -424,7 +604,7 @@ button {
 }
 
 button:hover {
-  background: #22d3ee;
+  background: #f97316;
 }
 
 .message {
@@ -449,7 +629,7 @@ button:hover {
   padding: 28px 32px;
   margin-bottom: 24px;
   background: rgba(5, 10, 20, 0.94);
-  border: 1px solid rgba(56, 189, 248, 0.16);
+  border: 1px solid rgba(248, 113, 15, 0.16);
   border-radius: 26px;
   box-shadow: 0 36px 90px rgba(0, 0, 0, 0.28);
 }
@@ -460,7 +640,7 @@ button:hover {
 
 .app-bar p {
   margin-top: 10px;
-  color: #94a3b8;
+  color: #e5e7eb;
   line-height: 1.6;
 }
 
@@ -542,7 +722,7 @@ button:hover {
   min-width: 180px;
   background: rgba(15, 23, 42, 0.95);
   color: #f8fafc;
-  border: 1px solid rgba(148, 163, 184, 0.18);
+  border: 1px solid rgba(248, 113, 15, 0.18);
   border-radius: 12px;
   padding: 10px 12px;
 }
@@ -553,12 +733,12 @@ button:hover {
   gap: 8px;
   padding: 10px 16px;
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(15, 23, 42, 0.9));
-  color: #cde7ff;
+  background: linear-gradient(135deg, rgba(251, 146, 60, 0.18), rgba(15, 23, 42, 0.9));
+  color: #ffffff;
   font-size: 0.95rem;
   font-weight: 700;
   letter-spacing: 0.02em;
-  border: 1px solid rgba(56, 189, 248, 0.2);
+  border: 1px solid rgba(248, 113, 15, 0.22);
 }
 
 .hidden {
@@ -591,8 +771,8 @@ button:hover {
 }
 
 .kpi-card {
-  background: linear-gradient(180deg, rgba(10, 18, 35, 0.96), rgba(7, 12, 25, 0.96));
-  border: 1px solid rgba(56, 189, 248, 0.12);
+  background: linear-gradient(180deg, rgba(30, 30, 30, 0.96), rgba(15, 23, 42, 0.96));
+  border: 1px solid rgba(248, 113, 15, 0.14);
   border-radius: 20px;
   padding: 20px;
   position: relative;
@@ -605,14 +785,14 @@ button:hover {
   inset: -20px 0 0 auto;
   width: 180px;
   height: 180px;
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.14), transparent 60%);
+  background: radial-gradient(circle, rgba(248, 113, 15, 0.18), transparent 60%);
   filter: blur(14px);
   pointer-events: none;
 }
 
 .kpi-card span {
   display: block;
-  color: #94a3b8;
+  color: #cbd5e1;
   margin-bottom: 10px;
   font-size: 0.95rem;
   text-transform: uppercase;
@@ -673,7 +853,7 @@ button:hover {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(56, 189, 248, 0.04), transparent 30%);
+  background: linear-gradient(180deg, rgba(248, 113, 15, 0.04), transparent 30%);
   pointer-events: none;
 }
 .chart-card::after {
@@ -683,7 +863,7 @@ button:hover {
   right: 20px;
   bottom: 20px;
   height: 2px;
-  background: rgba(56, 189, 248, 0.08);
+  background: rgba(248, 113, 15, 0.08);
 }
 
 .chart-area {
@@ -698,14 +878,14 @@ button:hover {
   min-height: 260px;
   border-radius: 18px;
   background: rgba(15, 23, 42, 0.8);
-  color: #94a3b8;
+  color: #cbd5e1;
   font-size: 1rem;
 }
 
 .table-scroll {
   overflow-x: auto;
   background: rgba(7, 12, 25, 0.92);
-  border: 1px solid rgba(56, 189, 248, 0.16);
+  border: 1px solid rgba(248, 113, 15, 0.16);
   border-radius: 20px;
   padding: 16px;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
@@ -721,7 +901,7 @@ th,
 td {
   padding: 14px 16px;
   text-align: left;
-  border-bottom: 1px solid rgba(56, 189, 248, 0.12);
+  border-bottom: 1px solid rgba(248, 113, 15, 0.12);
 }
 
 th {
@@ -732,7 +912,7 @@ th {
 }
 
 tbody tr:hover {
-  background: rgba(56, 189, 248, 0.08);
+  background: rgba(248, 113, 15, 0.08);
 }
 
 td {

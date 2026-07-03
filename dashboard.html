@@ -24,20 +24,6 @@
             <h2>Live vulnerability posture with executive-grade context</h2>
             <p class="hero-text">Monitor critical assets, surface top risk hosts, and follow remediation progress with a security-first dashboard.</p>
           </div>
-          <div class="hero-metrics">
-            <div>
-              <span>Platform Status</span>
-              <strong>Operational</strong>
-            </div>
-            <div>
-              <span>Security Mode</span>
-              <strong>Active Defense</strong>
-            </div>
-            <div>
-              <span>Data Refresh</span>
-              <strong>Live</strong>
-            </div>
-          </div>
         </article>
       </section>
 
@@ -56,6 +42,7 @@
               </div>
             </div>
             <span class="badge">Live overview</span>
+            <div id="loadingStatus" class="loading-status">Loading report data…</div>
           </div>
           <div class="kpi-grid large">
             <div class="kpi-card"><span>Total Assets</span><strong id="kpi-total-assets">12,834</strong></div>
@@ -190,8 +177,24 @@
         }
       };
       let currentReportData = null;
+      let currentReportPath = 'report-data.json';
       const reportCache = {};
+      const reportDetailsPaths = {};
       const chartInstances = {};
+
+      function getDetailsPath(reportPath) {
+        return reportDetailsPaths[reportPath] || reportPath.replace(/\.json$/, '-details.json');
+      }
+
+      async function loadReportDetails(detailsPath) {
+        if (reportCache[detailsPath]) {
+          return reportCache[detailsPath];
+        }
+
+        const details = await fetchJson(detailsPath);
+        reportCache[detailsPath] = details;
+        return details;
+      }
 
       function destroyChart(ctxId) {
         if (chartInstances[ctxId]) {
@@ -230,8 +233,23 @@
         return response.json();
       }
 
-      function displayVulnerabilitiesForAsset(asset) {
+      async function displayVulnerabilitiesForAsset(asset) {
         if (!currentReportData) return;
+        const detailsPath = getDetailsPath(currentReportPath);
+
+        if (!currentReportData.vulnerabilitiesByAsset) {
+          vulnDetailsBody.innerHTML = '<tr><td colspan="7">Loading vulnerabilities…</td></tr>';
+          try {
+            const details = await loadReportDetails(detailsPath);
+            currentReportData.vulnerabilitiesByAsset = details.vulnerabilitiesByAsset || {};
+          } catch (error) {
+            vulnDetailsBody.innerHTML = '<tr><td colspan="7">Unable to load asset details.</td></tr>';
+            detailTitle.textContent = `Vulnerability details · ${asset}`;
+            detailPanel.classList.remove('hidden');
+            return;
+          }
+        }
+
         const vulns = (currentReportData.vulnerabilitiesByAsset?.[asset] || []).slice();
         if (!vulns.length) {
           vulnDetailsBody.innerHTML = '<tr><td colspan="7">No vulnerabilities found for this asset.</td></tr>';
@@ -253,6 +271,10 @@
       }
 
       function displayDashboardData(data) {
+        const loadingStatus = document.getElementById('loadingStatus');
+        if (loadingStatus) {
+          loadingStatus.style.display = 'none';
+        }
         currentReportData = data;
         setBadgeText(data.reportMonth || 'Current Report');
 
@@ -357,6 +379,7 @@
       }
 
       async function loadDashboardData(reportPath = 'report-data.json') {
+        currentReportPath = reportPath;
         try {
           let data;
           if (typeof reportPath === 'string' && reportCache[reportPath]) {
@@ -376,6 +399,9 @@
       async function loadReportIndex() {
         try {
           const index = await fetchJson('report-data-index.json');
+          index.reports.forEach(report => {
+            reportDetailsPaths[report.file] = report.detailsFile || report.file.replace(/\.json$/, '-details.json');
+          });
           monthSelect.innerHTML = index.reports
             .map(report => `<option value="${report.file}">${report.month}</option>`)
             .join('');

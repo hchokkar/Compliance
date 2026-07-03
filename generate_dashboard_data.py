@@ -196,7 +196,7 @@ def build_report_data(file_path: Path):
     )
     compliance_score = round(max(0, 100 - (risk_score * 0.7)), 1)
 
-    return {
+    report_summary = {
         'totalVulnerabilities': severity_total,
         'totalAssets': len(asset_counts),
         'severity': severity,
@@ -209,7 +209,6 @@ def build_report_data(file_path: Path):
         'aging': aging_buckets,
         'topServers': servers,
         'assetRows': asset_rows,
-        'vulnerabilitiesByAsset': {asset: vulns for asset, vulns in vulns_by_asset.items()},
         'riskScore': risk_score,
         'complianceScore': compliance_score,
         'averageAge': round(sum(all_ages) / len(all_ages), 1) if all_ages else 0,
@@ -219,7 +218,12 @@ def build_report_data(file_path: Path):
         'assetTypes': dict(asset_types),
         'uniqueLocations': dict(unique_locations),
         'reportMonth': file_path.stem,
-    }, parse_report_month(file_path)
+    }
+    report_details = {
+        'reportMonth': file_path.stem,
+        'vulnerabilitiesByAsset': {asset: vulns for asset, vulns in vulns_by_asset.items()},
+    }
+    return report_summary, report_details, parse_report_month(file_path)
 
 
 if not REPORT_DIR.exists() or not any(REPORT_DIR.glob('*.xlsx')):
@@ -228,15 +232,22 @@ if not REPORT_DIR.exists() or not any(REPORT_DIR.glob('*.xlsx')):
 reports = []
 for report_path in sorted(REPORT_DIR.glob('*.xlsx')):
     month_dt = parse_report_month(report_path)
-    report_data, month_dt = build_report_data(report_path)
+    report_summary, report_details, month_dt = build_report_data(report_path)
     month_key = month_dt.strftime('%Y-%m')
     output_file = Path(f'report-data-{month_key}.json')
+    details_file = Path(f'report-data-{month_key}-details.json')
+
     with output_file.open('w', encoding='utf-8') as f:
-        json.dump(report_data, f, indent=2)
+        json.dump(report_summary, f, separators=(',', ':'), ensure_ascii=False)
+
+    with details_file.open('w', encoding='utf-8') as f:
+        json.dump(report_details, f, separators=(',', ':'), ensure_ascii=False)
+
     reports.append({
         'month': month_dt.strftime('%B %Y'),
         'key': month_key,
         'file': output_file.name,
+        'detailsFile': details_file.name,
         'date': month_dt.isoformat(),
     })
 
@@ -245,7 +256,13 @@ latest_report = reports[-1]
 with OUTPUT_PATH.open('w', encoding='utf-8') as f:
     with Path(latest_report['file']).open(encoding='utf-8') as report_f:
         latest_data = json.load(report_f)
-    json.dump(latest_data, f, indent=2)
+    json.dump(latest_data, f, separators=(',', ':'), ensure_ascii=False)
+
+latest_details_file = Path('report-data-details.json')
+with latest_details_file.open('w', encoding='utf-8') as f:
+    with Path(latest_report['detailsFile']).open(encoding='utf-8') as details_f:
+        latest_details = json.load(details_f)
+    json.dump(latest_details, f, separators=(',', ':'), ensure_ascii=False)
 
 index = {
     'reports': reports,
