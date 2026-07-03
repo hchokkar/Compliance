@@ -727,6 +727,45 @@ button:hover {
   padding: 10px 12px;
 }
 
+.upload-panel {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.upload-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 140px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  background: rgba(248, 113, 15, 0.18);
+  color: #f8fafc;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid rgba(248, 113, 15, 0.28);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.upload-button:hover {
+  background: rgba(248, 113, 15, 0.28);
+  transform: translateY(-1px);
+}
+
+.upload-panel input[type="file"] {
+  display: none;
+}
+
+.upload-status {
+  color: #cbd5e1;
+  font-size: 0.92rem;
+}
+
+.upload-status.error {
+  color: #fca5a5;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;

@@ -39,6 +39,11 @@
                   <label for="reportMonth">Select month:</label>
                   <select id="reportMonth"></select>
                 </div>
+                <div class="upload-panel">
+                  <label for="dataUpload" class="upload-button">Upload JSON</label>
+                  <input id="dataUpload" type="file" accept="application/json" />
+                  <span id="uploadStatus" class="upload-status"></span>
+                </div>
               </div>
             </div>
             <span class="badge">Live overview</span>
@@ -163,6 +168,8 @@
       }
 
       const monthSelect = document.getElementById('reportMonth');
+      const uploadInput = document.getElementById('dataUpload');
+      const uploadStatus = document.getElementById('uploadStatus');
       const detailPanel = document.getElementById('assetDetailPanel');
       const closeDetailBtn = document.getElementById('closeDetailBtn');
       const detailTitle = document.getElementById('detailTitle');
@@ -180,7 +187,24 @@
       let currentReportPath = 'report-data.json';
       const reportCache = {};
       const reportDetailsPaths = {};
+      const reportIndexMap = {};
+      const uploadedReports = {};
       const chartInstances = {};
+      const allMonths2026 = [
+        { key: '2026-01', label: 'January 2026' },
+        { key: '2026-02', label: 'February 2026' },
+        { key: '2026-03', label: 'March 2026' },
+        { key: '2026-04', label: 'April 2026' },
+        { key: '2026-05', label: 'May 2026' },
+        { key: '2026-06', label: 'June 2026' },
+        { key: '2026-07', label: 'July 2026' },
+        { key: '2026-08', label: 'August 2026' },
+        { key: '2026-09', label: 'September 2026' },
+        { key: '2026-10', label: 'October 2026' },
+        { key: '2026-11', label: 'November 2026' },
+        { key: '2026-12', label: 'December 2026' }
+      ];
+      const monthLabelMap = Object.fromEntries(allMonths2026.map(item => [item.label.toLowerCase(), item.key]));
 
       function getDetailsPath(reportPath) {
         return reportDetailsPaths[reportPath] || reportPath.replace(/\.json$/, '-details.json');
@@ -214,6 +238,31 @@
         const badge = document.querySelector('.badge');
         if (badge) {
           badge.textContent = reportMonth ? `Viewing ${reportMonth}` : 'Live overview';
+        }
+      }
+
+      function setUploadStatus(message, isError = false) {
+        if (!uploadStatus) return;
+        uploadStatus.textContent = message;
+        uploadStatus.className = isError ? 'upload-status error' : 'upload-status';
+      }
+
+      function monthKeyFromReportMonth(reportMonth) {
+        if (!reportMonth) return null;
+        return monthLabelMap[reportMonth.trim().toLowerCase()] || null;
+      }
+
+      function clearChartsAndTable() {
+        setBadgeText('');
+        const loadingStatus = document.getElementById('loadingStatus');
+        if (loadingStatus) {
+          loadingStatus.style.display = 'block';
+          loadingStatus.textContent = 'No data available for the selected month. Upload a JSON file to load report data.';
+        }
+        ['severityPie','topServers','assetsByOs','patchCompliance','slaStatus','agingTrend','businessRisk'].forEach(destroyChart);
+        const tableBody = document.getElementById('assetTableBody');
+        if (tableBody) {
+          tableBody.innerHTML = '<tr><td colspan="8">No asset data available for selected month.</td></tr>';
         }
       }
 
@@ -393,7 +442,79 @@
           displayDashboardData(data);
         } catch (error) {
           console.error('Failed to load dashboard data:', error);
+          clearChartsAndTable();
         }
+      }
+
+      async function loadDashboardDataByMonthKey(monthKey) {
+        const uploaded = uploadedReports[monthKey];
+        if (uploaded) {
+          displayDashboardData(uploaded);
+          setUploadStatus(`Loaded custom data for ${allMonths2026.find(item => item.key === monthKey)?.label || monthKey}`);
+          return;
+        }
+
+        const file = reportIndexMap[monthKey];
+        if (file) {
+          await loadDashboardData(file);
+          setUploadStatus('');
+          return;
+        }
+
+        clearChartsAndTable();
+      }
+
+      function buildMonthOptions(defaultKey) {
+        monthSelect.innerHTML = allMonths2026
+          .map(item => {
+            const available = Boolean(reportIndexMap[item.key] || uploadedReports[item.key]);
+            const suffix = available ? '' : ' (no data)';
+            return `<option value="${item.key}" data-available="${available}">${item.label}${suffix}</option>`;
+          })
+          .join('');
+        monthSelect.value = defaultKey || '2026-06';
+      }
+
+      function getUploadMonthKey(data) {
+        if (data.reportMonth) {
+          return monthKeyFromReportMonth(data.reportMonth);
+        }
+        return null;
+      }
+
+      async function handleUploadFile(file) {
+        if (!file.name.toLowerCase().endsWith('.json')) {
+          setUploadStatus('Please upload a JSON file.', true);
+          return;
+        }
+
+        let fileText;
+        try {
+          fileText = await file.text();
+        } catch (error) {
+          setUploadStatus('Unable to read the file.', true);
+          return;
+        }
+
+        let data;
+        try {
+          data = JSON.parse(fileText);
+        } catch (error) {
+          setUploadStatus('Invalid JSON file.', true);
+          return;
+        }
+
+        const monthKey = getUploadMonthKey(data);
+        if (!monthKey) {
+          setUploadStatus('JSON must include a reportMonth value like "May 2026".', true);
+          return;
+        }
+
+        uploadedReports[monthKey] = data;
+        buildMonthOptions(monthKey);
+        monthSelect.value = monthKey;
+        setUploadStatus(`Loaded ${file.name} for ${allMonths2026.find(item => item.key === monthKey)?.label || monthKey}`);
+        await loadDashboardDataByMonthKey(monthKey);
       }
 
       async function loadReportIndex() {
@@ -401,16 +522,24 @@
           const index = await fetchJson('report-data-index.json');
           index.reports.forEach(report => {
             reportDetailsPaths[report.file] = report.detailsFile || report.file.replace(/\.json$/, '-details.json');
+            reportIndexMap[report.key] = report.file;
           });
-          monthSelect.innerHTML = index.reports
-            .map(report => `<option value="${report.file}">${report.month}</option>`)
-            .join('');
-          monthSelect.value = index.defaultReport;
-          loadDashboardData(index.defaultReport);
+          const defaultKey = index.reports.find(report => report.file === index.defaultReport)?.key || '2026-06';
+          buildMonthOptions(defaultKey);
+          await loadDashboardDataByMonthKey(defaultKey);
 
           monthSelect.addEventListener('change', event => {
-            loadDashboardData(event.target.value);
+            loadDashboardDataByMonthKey(event.target.value);
           });
+
+          if (uploadInput) {
+            uploadInput.addEventListener('change', async event => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              await handleUploadFile(file);
+              uploadInput.value = '';
+            });
+          }
         } catch (error) {
           console.error('Failed to load report index:', error);
           loadDashboardData();
