@@ -5,184 +5,117 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Compliance Dashboard</title>
     <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body>
     <div class="dashboard-shell">
       <header class="app-bar">
         <div>
           <h1>Vulnerability Dashboard</h1>
-          <p>Customer Details Month Wise report · OS trend month wise</p>
+          <p>Customer details month-wise · OS trend and executive risk insights</p>
         </div>
         <button id="logoutBtn">Log Out</button>
       </header>
 
       <main>
-        <section class="section-grid executive-grid">
-          <div class="card full-card">
-            <div class="card-header">
-              <h2>Executive Dashboard (CISO View)</h2>
-            </div>
-            <div class="kpi-grid">
-              <div class="kpi-card"><span>Total Assets</span><strong>12,834</strong></div>
-              <div class="kpi-card"><span>Total Vulnerabilities</span><strong>8,972</strong></div>
-              <div class="kpi-card"><span>Critical Vulnerabilities</span><strong>214</strong></div>
-              <div class="kpi-card"><span>High Vulnerabilities</span><strong>1,812</strong></div>
-              <div class="kpi-card"><span>Medium Vulnerabilities</span><strong>3,451</strong></div>
-              <div class="kpi-card"><span>Low Vulnerabilities</span><strong>3,495</strong></div>
-              <div class="kpi-card"><span>Open Vulnerabilities</span><strong>4,832</strong></div>
-              <div class="kpi-card"><span>Closed Vulnerabilities</span><strong>4,140</strong></div>
-              <div class="kpi-card"><span>Risk Score</span><strong>72 / 100</strong></div>
-              <div class="kpi-card"><span>Compliance Score</span><strong>86%</strong></div>
-              <div class="kpi-card"><span>SLA Compliance %</span><strong>79%</strong></div>
-              <div class="kpi-card"><span>Patch Compliance %</span><strong>68%</strong></div>
-              <div class="kpi-card"><span>Internet Facing Assets</span><strong>419</strong></div>
-              <div class="kpi-card"><span>Active Scan Status</span><strong>In Progress</strong></div>
-              <div class="kpi-card"><span>Average MTTR</span><strong>14 days</strong></div>
-              <div class="kpi-card"><span>Vulnerabilities Added This Month</span><strong>1,073</strong></div>
-              <div class="kpi-card"><span>Vulnerabilities Fixed This Month</span><strong>912</strong></div>
-              <div class="kpi-card"><span>Risk Trend</span><strong>Decreasing</strong></div>
-            </div>
+        <section class="card kpi-panel">
+          <div class="panel-header">
+            <h2>Executive Dashboard (CISO View)</h2>
+            <span class="badge">Live overview</span>
           </div>
-          <div class="card chart-card">
-            <div class="card-header"><h3>Severity Pie Chart</h3></div>
-            <div class="chart-placeholder">Pie chart placeholder</div>
-          </div>
-          <div class="card chart-card">
-            <div class="card-header"><h3>Monthly Trend</h3></div>
-            <div class="chart-placeholder">Trend chart placeholder</div>
-          </div>
-          <div class="card chart-card">
-            <div class="card-header"><h3>Top 10 Risk Servers</h3></div>
-            <div class="chart-placeholder">Top servers placeholder</div>
-          </div>
-          <div class="card chart-card">
-            <div class="card-header"><h3>Business Unit Risk</h3></div>
-            <div class="chart-placeholder">Business unit risk placeholder</div>
-          </div>
-          <div class="card chart-card">
-            <div class="card-header"><h3>SLA Status</h3></div>
-            <div class="chart-placeholder">SLA status placeholder</div>
-          </div>
-          <div class="card chart-card">
-            <div class="card-header"><h3>Risk Heat Map</h3></div>
-            <div class="chart-placeholder">Heat map placeholder</div>
+          <div class="kpi-grid large">
+            <div class="kpi-card"><span>Total Assets</span><strong>12,834</strong></div>
+            <div class="kpi-card"><span>Total Vulnerabilities</span><strong>8,972</strong></div>
+            <div class="kpi-card"><span>Critical Vulnerabilities</span><strong>214</strong></div>
+            <div class="kpi-card"><span>High Vulnerabilities</span><strong>1,812</strong></div>
+            <div class="kpi-card"><span>Open Vulnerabilities</span><strong>4,832</strong></div>
+            <div class="kpi-card"><span>Closed Vulnerabilities</span><strong>4,140</strong></div>
+            <div class="kpi-card"><span>Risk Score</span><strong>72 / 100</strong></div>
+            <div class="kpi-card"><span>Compliance Score</span><strong>86%</strong></div>
+            <div class="kpi-card"><span>SLA Compliance</span><strong>79%</strong></div>
+            <div class="kpi-card"><span>Patch Compliance</span><strong>68%</strong></div>
+            <div class="kpi-card"><span>Internet Facing Assets</span><strong>419</strong></div>
+            <div class="kpi-card"><span>Average MTTR</span><strong>14 days</strong></div>
           </div>
         </section>
 
-        <section class="section-grid">
-          <div class="card full-card">
+        <section class="grid-layout chart-grid">
+          <article class="card chart-card">
+            <div class="card-header"><h3>Severity Pie</h3></div>
+            <div class="chart-area"><canvas id="severityPie"></canvas></div>
+          </article>
+          <article class="card chart-card">
+            <div class="card-header"><h3>Monthly Trend</h3></div>
+            <div class="chart-area"><canvas id="monthlyTrend"></canvas></div>
+          </article>
+          <article class="card chart-card">
+            <div class="card-header"><h3>Top 10 Risk Servers</h3></div>
+            <div class="chart-area"><canvas id="topServers"></canvas></div>
+          </article>
+          <article class="card chart-card">
+            <div class="card-header"><h3>Risk Heat Map</h3></div>
+            <div class="chart-area heatmap-placeholder">Heat map view</div>
+          </article>
+        </section>
+
+        <section class="grid-layout large">
+          <article class="card full-card">
             <div class="card-header"><h2>Asset Dashboard</h2></div>
             <div class="table-scroll">
               <table>
                 <thead>
                   <tr>
-                    <th>Server Name</th><th>IP Address</th><th>Operating System</th><th>Owner</th><th>Department</th><th>Environment</th><th>Asset Type</th><th>Location</th><th>Datacenter</th><th>Cloud</th><th>Criticality</th><th>Last Scan</th><th>Scan Status</th><th>Total Vulnerabilities</th><th>Critical</th><th>High</th><th>Medium</th><th>Low</th><th>Risk Score</th>
+                    <th>Server Name</th>
+                    <th>IP Address</th>
+                    <th>OS</th>
+                    <th>Owner</th>
+                    <th>Department</th>
+                    <th>Environment</th>
+                    <th>Criticality</th>
+                    <th>Risk Score</th>
+                    <th>Total Vulns</th>
+                    <th>Last Scan</th>
+                    <th>Scan Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><td>app-server-01</td><td>10.0.12.45</td><td>Ubuntu 22.04</td><td>Alice</td><td>IT</td><td>Prod</td><td>Server</td><td>Mumbai</td><td>DC1</td><td>AWS</td><td>High</td><td>2026-07-02</td><td>Completed</td><td>120</td><td>12</td><td>30</td><td>48</td><td>30</td><td>89</td></tr>
-                  <tr><td>db-server-02</td><td>10.0.22.56</td><td>Windows Server 2022</td><td>Bob</td><td>Finance</td><td>Prod</td><td>Database</td><td>Delhi</td><td>DC2</td><td>Azure</td><td>Critical</td><td>2026-07-01</td><td>Pending</td><td>217</td><td>28</td><td>65</td><td>80</td><td>44</td><td>94</td></tr>
-                  <tr><td>web-server-03</td><td>10.0.32.78</td><td>Red Hat 9</td><td>Charlie</td><td>Production</td><td>Pre-Prod</td><td>Web</td><td>Bangalore</td><td>DC1</td><td>On-prem</td><td>Medium</td><td>2026-07-01</td><td>Completed</td><td>45</td><td>3</td><td>12</td><td>18</td><td>12</td><td>65</td></tr>
+                  <tr><td>app-server-01</td><td>10.0.12.45</td><td>Ubuntu 22.04</td><td>Alice</td><td>IT</td><td>Prod</td><td>High</td><td>89</td><td>120</td><td>2026-07-02</td><td>Completed</td></tr>
+                  <tr><td>db-server-02</td><td>10.0.22.56</td><td>Windows Server 2022</td><td>Bob</td><td>Finance</td><td>Prod</td><td>Critical</td><td>94</td><td>217</td><td>2026-07-01</td><td>Pending</td></tr>
+                  <tr><td>web-server-03</td><td>10.0.32.78</td><td>Red Hat 9</td><td>Charlie</td><td>Production</td><td>Pre-Prod</td><td>Medium</td><td>65</td><td>45</td><td>2026-07-01</td><td>Completed</td></tr>
                 </tbody>
               </table>
             </div>
-          </div>
-          <div class="card chart-card">
+          </article>
+        </section>
+
+        <section class="grid-layout chart-grid">
+          <article class="card chart-card">
             <div class="card-header"><h3>Assets by OS</h3></div>
-            <div class="chart-placeholder">OS chart placeholder</div>
-          </div>
-          <div class="card chart-card">
+            <div class="chart-area"><canvas id="assetsByOs"></canvas></div>
+          </article>
+          <article class="card chart-card">
             <div class="card-header"><h3>Assets by Location</h3></div>
-            <div class="chart-placeholder">Location chart placeholder</div>
-          </div>
-          <div class="card chart-card">
-            <div class="card-header"><h3>Assets by Cloud</h3></div>
-            <div class="chart-placeholder">Cloud chart placeholder</div>
-          </div>
-          <div class="card chart-card">
-            <div class="card-header"><h3>Asset Criticality</h3></div>
-            <div class="chart-placeholder">Criticality chart placeholder</div>
-          </div>
+            <div class="chart-area"><canvas id="assetsByLocation"></canvas></div>
+          </article>
+          <article class="card chart-card">
+            <div class="card-header"><h3>Patch Compliance</h3></div>
+            <div class="chart-area"><canvas id="patchCompliance"></canvas></div>
+          </article>
         </section>
 
-        <section class="section-grid">
-          <div class="card full-card">
-            <div class="card-header"><h2>Vulnerability Dashboard</h2></div>
-            <div class="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>CVE</th><th>Plugin ID</th><th>Vulnerability Name</th><th>Severity</th><th>CVSS v2</th><th>CVSS v3</th><th>EPSS Score</th><th>KEV Status</th><th>Exploit Available</th><th>Patch Available</th><th>First Detected</th><th>Last Detected</th><th>Days Open</th><th>Status</th><th>Assigned To</th><th>Due Date</th><th>SLA</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr><td>CVE-2026-1234</td><td>10101</td><td>Remote code execution in OpenSSH</td><td>Critical</td><td>9.8</td><td>10.0</td><td>0.92</td><td>KEV</td><td>Yes</td><td>Yes</td><td>2026-06-10</td><td>2026-07-02</td><td>22</td><td>Open</td><td>David</td><td>2026-07-09</td><td>Breached</td></tr>
-                  <tr><td>CVE-2026-2345</td><td>10102</td><td>SQL injection in web app</td><td>High</td><td>7.5</td><td>8.4</td><td>0.75</td><td>Watchlist</td><td>No</td><td>Yes</td><td>2026-06-22</td><td>2026-07-01</td><td>9</td><td>Open</td><td>Emma</td><td>2026-07-16</td><td>Due</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <div class="card chart-card">
-            <div class="card-header"><h3>Severity Distribution</h3></div>
-            <div class="chart-placeholder">Severity distribution placeholder</div>
-          </div>
-          <div class="card chart-card">
-            <div class="card-header"><h3>CVSS Distribution</h3></div>
-            <div class="chart-placeholder">CVSS distribution placeholder</div>
-          </div>
-          <div class="card chart-card">
-            <div class="card-header"><h3>KEV Vulnerabilities</h3></div>
-            <div class="chart-placeholder">KEV chart placeholder</div>
-          </div>
-          <div class="card chart-card">
-            <div class="card-header"><h3>Exploitable Vulnerabilities</h3></div>
-            <div class="chart-placeholder">Exploit chart placeholder</div>
-          </div>
-        </section>
-
-        <section class="section-grid">
-          <div class="card full-card">
-            <div class="card-header"><h2>Patch Management Dashboard</h2></div>
-            <div class="kpi-grid">
-              <div class="kpi-card"><span>Missing Updates</span><strong>128</strong></div>
-              <div class="kpi-card"><span>Installed Updates</span><strong>5,342</strong></div>
-              <div class="kpi-card"><span>Failed Updates</span><strong>16</strong></div>
-              <div class="kpi-card"><span>Pending Reboot</span><strong>23</strong></div>
-              <div class="kpi-card"><span>Patch Compliance</span><strong>68%</strong></div>
-              <div class="kpi-card"><span>Patch Age</span><strong>14 days</strong></div>
-              <div class="kpi-card"><span>Patch Deployment Trend</span><strong>Rising</strong></div>
-            </div>
-          </div>
-          <div class="card chart-card">
-            <div class="card-header"><h3>Patch Status</h3></div>
-            <div class="chart-placeholder">Patch status placeholder</div>
-          </div>
-        </section>
-
-        <section class="section-grid">
-          <div class="card full-card">
-            <div class="card-header"><h2>Monthly Trend Dashboard</h2></div>
-            <div class="chart-placeholder">Monthly trends placeholder</div>
-          </div>
-        </section>
-
-        <section class="section-grid sla-age-grid">
-          <div class="card chart-card">
-            <div class="card-header"><h3>SLA Dashboard</h3></div>
-            <div class="chart-placeholder">SLA traffic lights placeholder</div>
-          </div>
-          <div class="card chart-card">
-            <div class="card-header"><h3>Aging Dashboard</h3></div>
-            <div class="chart-placeholder">Aging heatmap placeholder</div>
-          </div>
-          <div class="card chart-card">
-            <div class="card-header"><h3>Risk Dashboard</h3></div>
-            <div class="chart-placeholder">Risk charts placeholder</div>
-          </div>
-          <div class="card chart-card">
-            <div class="card-header"><h3>Business Unit Dashboard</h3></div>
-            <div class="chart-placeholder">Business unit KPI placeholder</div>
-          </div>
+        <section class="grid-layout sla-age-grid">
+          <article class="card chart-card">
+            <div class="card-header"><h3>SLA Summary</h3></div>
+            <div class="chart-area"><canvas id="slaStatus"></canvas></div>
+          </article>
+          <article class="card chart-card">
+            <div class="card-header"><h3>Aging Distribution</h3></div>
+            <div class="chart-area"><canvas id="agingTrend"></canvas></div>
+          </article>
+          <article class="card chart-card">
+            <div class="card-header"><h3>Business Unit Risk</h3></div>
+            <div class="chart-area"><canvas id="businessRisk"></canvas></div>
+          </article>
         </section>
       </main>
     </div>
@@ -198,6 +131,67 @@
       if (!loggedInUser) {
         window.location.href = "index.html";
       }
+
+      const chartDefaults = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#cbd5e1' } } },
+        scales: {
+          x: { ticks: { color: '#cbd5e1' }, grid: { color: 'rgba(148,163,184,0.12)' } },
+          y: { ticks: { color: '#cbd5e1' }, grid: { color: 'rgba(148,163,184,0.12)' } }
+        }
+      };
+
+      function createChart(ctxId, type, data, options = {}) {
+        const ctx = document.getElementById(ctxId);
+        if (!ctx) return;
+        new Chart(ctx, { type, data, options: Object.assign({}, chartDefaults, options) });
+      }
+
+      createChart('severityPie', 'doughnut', {
+        labels: ['Critical', 'High', 'Medium', 'Low'],
+        datasets: [{ data: [214, 1812, 3451, 3495], backgroundColor: ['#f97316', '#facc15', '#38bdf8', '#22c55e'], borderWidth: 0 }]
+      });
+
+      createChart('monthlyTrend', 'line', {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+        datasets: [{ label: 'New Vulnerabilities', data: [812, 940, 1020, 1134, 1280, 1210, 1073], borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.18)', fill: true, tension: 0.35 }, { label: 'Fixed Vulnerabilities', data: [720, 830, 900, 980, 1035, 1080, 912], borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.18)', fill: true, tension: 0.35 }]
+      });
+
+      createChart('topServers', 'bar', {
+        labels: ['db-server-02', 'app-server-01', 'web-server-03', 'mail-01', 'proxy-01'],
+        datasets: [{ label: 'Risk Score', data: [94, 89, 82, 78, 73], backgroundColor: '#fb7185' }]
+      });
+
+      createChart('assetsByOs', 'pie', {
+        labels: ['Linux', 'Windows', 'Cloud Appliances', 'Other'],
+        datasets: [{ data: [48, 32, 12, 8], backgroundColor: ['#38bdf8', '#f97316', '#a78bfa', '#22c55e'] }]
+      });
+
+      createChart('assetsByLocation', 'bar', {
+        labels: ['Mumbai', 'Delhi', 'Bangalore', 'Chennai'],
+        datasets: [{ label: 'Assets', data: [34, 27, 18, 12], backgroundColor: '#818cf8' }]
+      });
+
+      createChart('patchCompliance', 'radar', {
+        labels: ['Missing Updates', 'Installed', 'Failed', 'Pending Reboot', 'Compliance'],
+        datasets: [{ label: 'Patch Metrics', data: [128, 5342, 16, 23, 68], backgroundColor: 'rgba(56,189,248,0.18)', borderColor: '#38bdf8', fill: true }]
+      }, { scales: { r: { grid: { color: 'rgba(148,163,184,0.12)' }, ticks: { color: '#cbd5e1' } } } });
+
+      createChart('slaStatus', 'doughnut', {
+        labels: ['Within SLA', 'Near SLA', 'Breached SLA'],
+        datasets: [{ data: [52, 23, 15], backgroundColor: ['#22c55e', '#facc15', '#f97316'] }]
+      });
+
+      createChart('agingTrend', 'bar', {
+        labels: ['0-30', '31-60', '61-90', '91-180', '180+', '365+'],
+        datasets: [{ label: 'Vulnerabilities', data: [312, 210, 180, 95, 50, 21], backgroundColor: '#38bdf8' }]
+      });
+
+      createChart('businessRisk', 'line', {
+        labels: ['HR', 'Finance', 'IT', 'Infrastructure', 'Production', 'Customer'],
+        datasets: [{ label: 'Risk Score', data: [68, 82, 91, 74, 86, 79], borderColor: '#fb7185', backgroundColor: 'rgba(251,113,133,0.18)', fill: true, tension: 0.35 }]
+      });
     </script>
   </body>
 </html>
