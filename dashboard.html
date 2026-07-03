@@ -24,18 +24,18 @@
             <span class="badge">Live overview</span>
           </div>
           <div class="kpi-grid large">
-            <div class="kpi-card"><span>Total Assets</span><strong>12,834</strong></div>
-            <div class="kpi-card"><span>Total Vulnerabilities</span><strong>8,972</strong></div>
-            <div class="kpi-card"><span>Critical Vulnerabilities</span><strong>214</strong></div>
-            <div class="kpi-card"><span>High Vulnerabilities</span><strong>1,812</strong></div>
-            <div class="kpi-card"><span>Open Vulnerabilities</span><strong>4,832</strong></div>
-            <div class="kpi-card"><span>Closed Vulnerabilities</span><strong>4,140</strong></div>
-            <div class="kpi-card"><span>Risk Score</span><strong>72 / 100</strong></div>
-            <div class="kpi-card"><span>Compliance Score</span><strong>86%</strong></div>
-            <div class="kpi-card"><span>SLA Compliance</span><strong>79%</strong></div>
-            <div class="kpi-card"><span>Patch Compliance</span><strong>68%</strong></div>
-            <div class="kpi-card"><span>Internet Facing Assets</span><strong>419</strong></div>
-            <div class="kpi-card"><span>Average MTTR</span><strong>14 days</strong></div>
+            <div class="kpi-card"><span>Total Assets</span><strong id="kpi-total-assets">12,834</strong></div>
+            <div class="kpi-card"><span>Total Vulnerabilities</span><strong id="kpi-total-vulns">8,972</strong></div>
+            <div class="kpi-card"><span>Critical Vulnerabilities</span><strong id="kpi-critical-vulns">214</strong></div>
+            <div class="kpi-card"><span>High Vulnerabilities</span><strong id="kpi-high-vulns">1,812</strong></div>
+            <div class="kpi-card"><span>Medium Vulnerabilities</span><strong id="kpi-medium-vulns">4,832</strong></div>
+            <div class="kpi-card"><span>Low Vulnerabilities</span><strong id="kpi-low-vulns">4,140</strong></div>
+            <div class="kpi-card"><span>Risk Score</span><strong id="kpi-risk-score">72 / 100</strong></div>
+            <div class="kpi-card"><span>Compliance Score</span><strong id="kpi-compliance-score">86%</strong></div>
+            <div class="kpi-card"><span>SLA Compliance</span><strong id="kpi-sla-compliance">79%</strong></div>
+            <div class="kpi-card"><span>Patch Compliance</span><strong id="kpi-patch-compliance">68%</strong></div>
+            <div class="kpi-card"><span>Internet Facing Assets</span><strong id="kpi-internet-assets">419</strong></div>
+            <div class="kpi-card"><span>Average MTTR</span><strong id="kpi-mttr">14 days</strong></div>
           </div>
         </section>
 
@@ -52,10 +52,6 @@
             <div class="card-header"><h3>Top 10 Risk Servers</h3></div>
             <div class="chart-area"><canvas id="topServers"></canvas></div>
           </article>
-          <article class="card chart-card">
-            <div class="card-header"><h3>Risk Heat Map</h3></div>
-            <div class="chart-area heatmap-placeholder">Heat map view</div>
-          </article>
         </section>
 
         <section class="grid-layout large">
@@ -64,13 +60,10 @@
             <div class="table-scroll">
               <table>
                 <thead>
-                  <tr>
+                      <tr>
                     <th>Server Name</th>
                     <th>IP Address</th>
                     <th>OS</th>
-                    <th>Owner</th>
-                    <th>Department</th>
-                    <th>Environment</th>
                     <th>Criticality</th>
                     <th>Risk Score</th>
                     <th>Total Vulns</th>
@@ -79,9 +72,6 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><td>app-server-01</td><td>10.0.12.45</td><td>Ubuntu 22.04</td><td>Alice</td><td>IT</td><td>Prod</td><td>High</td><td>89</td><td>120</td><td>2026-07-02</td><td>Completed</td></tr>
-                  <tr><td>db-server-02</td><td>10.0.22.56</td><td>Windows Server 2022</td><td>Bob</td><td>Finance</td><td>Prod</td><td>Critical</td><td>94</td><td>217</td><td>2026-07-01</td><td>Pending</td></tr>
-                  <tr><td>web-server-03</td><td>10.0.32.78</td><td>Red Hat 9</td><td>Charlie</td><td>Production</td><td>Pre-Prod</td><td>Medium</td><td>65</td><td>45</td><td>2026-07-01</td><td>Completed</td></tr>
                 </tbody>
               </table>
             </div>
@@ -92,10 +82,6 @@
           <article class="card chart-card">
             <div class="card-header"><h3>Assets by OS</h3></div>
             <div class="chart-area"><canvas id="assetsByOs"></canvas></div>
-          </article>
-          <article class="card chart-card">
-            <div class="card-header"><h3>Assets by Location</h3></div>
-            <div class="chart-area"><canvas id="assetsByLocation"></canvas></div>
           </article>
           <article class="card chart-card">
             <div class="card-header"><h3>Patch Compliance</h3></div>
@@ -148,50 +134,128 @@
         new Chart(ctx, { type, data, options: Object.assign({}, chartDefaults, options) });
       }
 
-      createChart('severityPie', 'doughnut', {
-        labels: ['Critical', 'High', 'Medium', 'Low'],
-        datasets: [{ data: [214, 1812, 3451, 3495], backgroundColor: ['#f97316', '#facc15', '#38bdf8', '#22c55e'], borderWidth: 0 }]
-      });
+      async function loadDashboardData() {
+        try {
+          const response = await fetch('report-data.json');
+          const data = await response.json();
 
-      createChart('monthlyTrend', 'line', {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
-        datasets: [{ label: 'New Vulnerabilities', data: [812, 940, 1020, 1134, 1280, 1210, 1073], borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.18)', fill: true, tension: 0.35 }, { label: 'Fixed Vulnerabilities', data: [720, 830, 900, 980, 1035, 1080, 912], borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.18)', fill: true, tension: 0.35 }]
-      });
+          document.getElementById('kpi-total-assets').textContent = data.totalAssets;
+          document.getElementById('kpi-total-vulns').textContent = data.totalVulnerabilities;
+          document.getElementById('kpi-critical-vulns').textContent = data.severity.Critical || 0;
+          document.getElementById('kpi-high-vulns').textContent = data.severity.High || 0;
+          document.getElementById('kpi-medium-vulns').textContent = data.severity.Medium || 0;
+          document.getElementById('kpi-low-vulns').textContent = data.severity.Low || 0;
+          document.getElementById('kpi-risk-score').textContent = `${data.riskScore} / 100`;
+          document.getElementById('kpi-compliance-score').textContent = `${data.complianceScore}%`;
+          document.getElementById('kpi-sla-compliance').textContent = `${Math.round((data.sla['Within SLA'] || 0) / Math.max(1, data.totalVulnerabilities) * 100)}%`;
+          document.getElementById('kpi-patch-compliance').textContent = `${data.patchCompliance}%`;
+          document.getElementById('kpi-internet-assets').textContent = data.internetFacingAssets ?? 'N/A';
+          document.getElementById('kpi-mttr').textContent = data.averageAge ? `${data.averageAge} days` : 'N/A';
 
-      createChart('topServers', 'bar', {
-        labels: ['db-server-02', 'app-server-01', 'web-server-03', 'mail-01', 'proxy-01'],
-        datasets: [{ label: 'Risk Score', data: [94, 89, 82, 78, 73], backgroundColor: '#fb7185' }]
-      });
+          createChart('severityPie', 'doughnut', {
+            labels: ['Critical', 'High', 'Medium', 'Low'],
+            datasets: [{
+              data: [data.severity.Critical || 0, data.severity.High || 0, data.severity.Medium || 0, data.severity.Low || 0],
+              backgroundColor: ['#f97316', '#ef4444', '#38bdf8', '#22c55e'],
+              borderWidth: 0
+            }]
+          });
 
-      createChart('assetsByOs', 'pie', {
-        labels: ['Linux', 'Windows', 'Cloud Appliances', 'Other'],
-        datasets: [{ data: [48, 32, 12, 8], backgroundColor: ['#38bdf8', '#f97316', '#a78bfa', '#22c55e'] }]
-      });
+          const trendLabels = Object.keys(data.monthlyTrend).map(key => {
+            const date = new Date(`${key}-01`);
+            return date.toLocaleString('default', { month: 'short', year: 'numeric' });
+          });
 
-      createChart('assetsByLocation', 'bar', {
-        labels: ['Mumbai', 'Delhi', 'Bangalore', 'Chennai'],
-        datasets: [{ label: 'Assets', data: [34, 27, 18, 12], backgroundColor: '#818cf8' }]
-      });
+          createChart('monthlyTrend', 'line', {
+            labels: trendLabels,
+            datasets: [{
+              label: 'Vulnerabilities',
+              data: Object.values(data.monthlyTrend),
+              borderColor: '#38bdf8',
+              backgroundColor: 'rgba(56,189,248,0.18)',
+              fill: true,
+              tension: 0.35
+            }]
+          });
 
-      createChart('patchCompliance', 'radar', {
-        labels: ['Missing Updates', 'Installed', 'Failed', 'Pending Reboot', 'Compliance'],
-        datasets: [{ label: 'Patch Metrics', data: [128, 5342, 16, 23, 68], backgroundColor: 'rgba(56,189,248,0.18)', borderColor: '#38bdf8', fill: true }]
-      }, { scales: { r: { grid: { color: 'rgba(148,163,184,0.12)' }, ticks: { color: '#cbd5e1' } } } });
+          const sortedTopServers = (data.topServers || []).slice().sort((a, b) => b.risk - a.risk);
+          createChart('topServers', 'bar', {
+            labels: sortedTopServers.map(item => item.asset),
+            datasets: [{
+              label: 'Risk Score',
+              data: sortedTopServers.map(item => item.risk),
+              backgroundColor: '#fb7185'
+            }]
+          });
 
-      createChart('slaStatus', 'doughnut', {
-        labels: ['Within SLA', 'Near SLA', 'Breached SLA'],
-        datasets: [{ data: [52, 23, 15], backgroundColor: ['#22c55e', '#facc15', '#f97316'] }]
-      });
+          createChart('assetsByOs', 'pie', {
+            labels: Object.keys(data.osDistribution || {}).slice(0, 8),
+            datasets: [{
+              data: Object.values(data.osDistribution || {}).slice(0, 8),
+              backgroundColor: ['#38bdf8', '#f97316', '#a78bfa', '#22c55e', '#facc15', '#818cf8', '#f472b6', '#22d3ee']
+            }]
+          });
 
-      createChart('agingTrend', 'bar', {
-        labels: ['0-30', '31-60', '61-90', '91-180', '180+', '365+'],
-        datasets: [{ label: 'Vulnerabilities', data: [312, 210, 180, 95, 50, 21], backgroundColor: '#38bdf8' }]
-      });
+          createChart('patchCompliance', 'doughnut', {
+            labels: ['Patch Compliant', 'Not Compliant'],
+            datasets: [{
+              data: [data.patchCompliance, Math.max(0, 100 - data.patchCompliance)],
+              backgroundColor: ['#22c55e', '#f97316']
+            }]
+          });
 
-      createChart('businessRisk', 'line', {
-        labels: ['HR', 'Finance', 'IT', 'Infrastructure', 'Production', 'Customer'],
-        datasets: [{ label: 'Risk Score', data: [68, 82, 91, 74, 86, 79], borderColor: '#fb7185', backgroundColor: 'rgba(251,113,133,0.18)', fill: true, tension: 0.35 }]
-      });
+          createChart('slaStatus', 'doughnut', {
+            labels: ['Within SLA', 'Near SLA', 'Breached SLA'],
+            datasets: [{
+              data: [data.sla['Within SLA'] || 0, data.sla['Near SLA'] || 0, data.sla['Breached SLA'] || 0],
+              backgroundColor: ['#22c55e', '#facc15', '#f97316']
+            }]
+          });
+
+          createChart('agingTrend', 'bar', {
+            labels: Object.keys(data.aging),
+            datasets: [{
+              label: 'Vulnerabilities',
+              data: Object.values(data.aging),
+              backgroundColor: '#38bdf8'
+            }]
+          });
+
+          createChart('businessRisk', 'line', {
+            labels: Object.keys(data.businessRiskByTenant),
+            datasets: [{
+              label: 'Vulnerability Count',
+              data: Object.values(data.businessRiskByTenant),
+              borderColor: '#fb7185',
+              backgroundColor: 'rgba(251,113,133,0.18)',
+              fill: true,
+              tension: 0.35
+            }]
+          });
+
+          const tableBody = document.querySelector('table tbody');
+          tableBody.innerHTML = '';
+          (data.assetRows || []).slice(0, 8).forEach(item => {
+            const criticality = item.critical > 0 ? 'Critical' : item.high > 0 ? 'High' : 'Medium';
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${item.asset}</td>
+              <td>${item.ip || 'Unknown'}</td>
+              <td>${item.os || 'Unknown'}</td>
+              <td>${criticality}</td>
+              <td>${item.risk || '—'}</td>
+              <td>${item.totalVulnerabilities}</td>
+              <td>${item.lastScan || 'Unknown'}</td>
+              <td>${item.status || 'Unknown'}</td>
+            `;
+            tableBody.appendChild(row);
+          });
+        } catch (error) {
+          console.error('Failed to load dashboard data:', error);
+        }
+      }
+
+      loadDashboardData();
     </script>
   </body>
 </html>
