@@ -1,0 +1,17 @@
+{
+  "reports": [
+    {
+      "month": "May 2026",
+      "key": "2026-05",
+      "file": "report-data-2026-05.json",
+      "date": "2026-05-01T00:00:00"
+    },
+    {
+      "month": "June 2026",
+      "key": "2026-06",
+      "file": "report-data-2026-06.json",
+      "date": "2026-06-01T00:00:00"
+    }
+  ],
+  "defaultReport": "report-data-2026-06.json"
+}

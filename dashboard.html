@@ -6,6 +6,7 @@
     <title>Compliance Dashboard</title>
     <link rel="stylesheet" href="style.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   </head>
   <body>
     <div class="dashboard-shell">
@@ -20,7 +21,21 @@
       <main>
         <section class="card kpi-panel">
           <div class="panel-header">
-            <h2>Executive Dashboard (CISO View)</h2>
+            <div class="dashboard-toolbar">
+              <div>
+                <h2>Executive Dashboard</h2>
+              </div>
+              <div class="toolbar-actions">
+                <div class="month-filter">
+                  <label for="reportMonth">Select month:</label>
+                  <select id="reportMonth"></select>
+                </div>
+                <div class="upload-filter">
+                  <label for="reportUpload">Upload report:</label>
+                  <input id="reportUpload" type="file" accept=".xlsx" />
+                </div>
+              </div>
+            </div>
             <span class="badge">Live overview</span>
           </div>
           <div class="kpi-grid large">
@@ -45,10 +60,6 @@
             <div class="chart-area"><canvas id="severityPie"></canvas></div>
           </article>
           <article class="card chart-card">
-            <div class="card-header"><h3>Monthly Trend</h3></div>
-            <div class="chart-area"><canvas id="monthlyTrend"></canvas></div>
-          </article>
-          <article class="card chart-card">
             <div class="card-header"><h3>Top 10 Risk Servers</h3></div>
             <div class="chart-area"><canvas id="topServers"></canvas></div>
           </article>
@@ -71,8 +82,35 @@
                     <th>Scan Status</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody id="assetTableBody">
                 </tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <section class="grid-layout full-card hidden" id="assetDetailPanel">
+          <article class="card full-card">
+            <div class="card-header detail-header">
+              <div>
+                <h2 id="detailTitle">Server Vulnerability Details</h2>
+              </div>
+              <button id="closeDetailBtn" class="close-btn" type="button">Close</button>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Vulnerability</th>
+                    <th>Severity</th>
+                    <th>Protocol</th>
+                    <th>Port</th>
+                    <th>Last Found</th>
+                    <th>CVE</th>
+                    <th>VPR</th>
+                  </tr>
+                </thead>
+                <tbody id="vulnDetailsBody"></tbody>
               </table>
             </div>
           </article>
@@ -118,6 +156,12 @@
         window.location.href = "index.html";
       }
 
+      const monthSelect = document.getElementById('reportMonth');
+      const reportUpload = document.getElementById('reportUpload');
+      const detailPanel = document.getElementById('assetDetailPanel');
+      const closeDetailBtn = document.getElementById('closeDetailBtn');
+      const detailTitle = document.getElementById('detailTitle');
+      const vulnDetailsBody = document.getElementById('vulnDetailsBody');
       const chartDefaults = {
         responsive: true,
         maintainAspectRatio: false,
@@ -127,113 +171,354 @@
           y: { ticks: { color: '#cbd5e1' }, grid: { color: 'rgba(148,163,184,0.12)' } }
         }
       };
+      let currentReportData = null;
+      const reportCache = {};
+      const chartInstances = {};
+
+      function destroyChart(ctxId) {
+        if (chartInstances[ctxId]) {
+          chartInstances[ctxId].destroy();
+          delete chartInstances[ctxId];
+        }
+      }
 
       function createChart(ctxId, type, data, options = {}) {
         const ctx = document.getElementById(ctxId);
         if (!ctx) return;
-        new Chart(ctx, { type, data, options: Object.assign({}, chartDefaults, options) });
+        destroyChart(ctxId);
+        chartInstances[ctxId] = new Chart(ctx, { type, data, options: Object.assign({}, chartDefaults, options) });
       }
 
-      async function loadDashboardData() {
-        try {
-          const response = await fetch('report-data.json');
-          const data = await response.json();
+      function setBadgeText(reportMonth) {
+        const badge = document.querySelector('.badge');
+        if (badge) {
+          badge.textContent = reportMonth ? `Viewing ${reportMonth}` : 'Live overview';
+        }
+      }
 
-          document.getElementById('kpi-total-assets').textContent = data.totalAssets;
-          document.getElementById('kpi-total-vulns').textContent = data.totalVulnerabilities;
-          document.getElementById('kpi-critical-vulns').textContent = data.severity.Critical || 0;
-          document.getElementById('kpi-high-vulns').textContent = data.severity.High || 0;
-          document.getElementById('kpi-medium-vulns').textContent = data.severity.Medium || 0;
-          document.getElementById('kpi-low-vulns').textContent = data.severity.Low || 0;
-          document.getElementById('kpi-risk-score').textContent = `${data.riskScore} / 100`;
-          document.getElementById('kpi-compliance-score').textContent = `${data.complianceScore}%`;
-          document.getElementById('kpi-sla-compliance').textContent = `${Math.round((data.sla['Within SLA'] || 0) / Math.max(1, data.totalVulnerabilities) * 100)}%`;
-          document.getElementById('kpi-patch-compliance').textContent = `${data.patchCompliance}%`;
-          document.getElementById('kpi-internet-assets').textContent = data.internetFacingAssets ?? 'N/A';
-          document.getElementById('kpi-mttr').textContent = data.averageAge ? `${data.averageAge} days` : 'N/A';
+      function formatDate(value) {
+        const date = new Date(value);
+        if (!value || Number.isNaN(date.getTime())) return 'Unknown';
+        return date.toISOString().split('T')[0];
+      }
 
-          createChart('severityPie', 'doughnut', {
-            labels: ['Critical', 'High', 'Medium', 'Low'],
-            datasets: [{
-              data: [data.severity.Critical || 0, data.severity.High || 0, data.severity.Medium || 0, data.severity.Low || 0],
-              backgroundColor: ['#f97316', '#ef4444', '#38bdf8', '#22c55e'],
-              borderWidth: 0
-            }]
+      function normalizeText(value) {
+        return value == null ? '' : String(value).trim();
+      }
+
+      function parseMonthFromFileName(filename) {
+        const match = filename.match(/([A-Za-z]+)\s*(\d{4})/);
+        if (match) {
+          const [, monthName, year] = match;
+          const parsed = new Date(`${monthName} 1, ${year}`);
+          if (!Number.isNaN(parsed.getTime())) {
+            return `${parsed.toLocaleString('default', { month: 'long' })} ${parsed.getFullYear()}`;
+          }
+        }
+        return `Uploaded ${new Date().toLocaleDateString()}`;
+      }
+
+      function buildReportDataFromRows(rows, reportMonth) {
+        const severity = { Critical: 0, High: 0, Medium: 0, Low: 0, Unknown: 0 };
+        const osDistribution = {};
+        const state = {};
+        const tenantCount = {};
+        const exploitability = {};
+        const monthCount = {};
+        const sla = { 'Within SLA': 0, 'Near SLA': 0, 'Breached SLA': 0 };
+        const aging = { '0-30 Days': 0, '31-60 Days': 0, '61-90 Days': 0, '91-180 Days': 0, '180+ Days': 0, '365+ Days': 0 };
+        const topAssets = {};
+        const assetCounts = {};
+        const assetInfo = {};
+        const uniqueLocations = {};
+        const assetTypes = {};
+        const allAges = [];
+        const vulnerabilitiesByAsset = {};
+
+        rows.forEach(row => {
+          const assetName = normalizeText(row['Assetname'] || row['Asset Name'] || row['Host'] || row['IP Address'] || 'Unknown');
+          const severityValue = normalizeText(row['Severity']) || 'Unknown';
+          const osValue = normalizeText(row['OS']) || 'Unknown';
+          const stateValue = normalizeText(row['state']) || 'Unknown';
+          const tenantValue = normalizeText(row['Tenant']) || 'Unknown';
+          const exploitValue = normalizeText(row['Exploitability']) || 'Unknown';
+          const tagsValue = normalizeText(row['asset.tags']);
+          const ageValue = parseInt(row['age_in_days'], 10);
+          const lastFound = normalizeText(row['Last Found']);
+          const ipAddress = normalizeText(row['IP Address']);
+
+          severity[severityValue] = (severity[severityValue] || 0) + 1;
+          osDistribution[osValue] = (osDistribution[osValue] || 0) + 1;
+          state[stateValue] = (state[stateValue] || 0) + 1;
+          tenantCount[tenantValue] = (tenantCount[tenantValue] || 0) + 1;
+          exploitability[exploitValue] = (exploitability[exploitValue] || 0) + 1;
+          assetCounts[assetName] = (assetCounts[assetName] || 0) + 1;
+
+          if (!assetInfo[assetName]) {
+            assetInfo[assetName] = { ip: ipAddress || 'Unknown', os: osValue, status: stateValue, lastScan: null };
+          } else {
+            if (assetInfo[assetName].ip === 'Unknown' && ipAddress) assetInfo[assetName].ip = ipAddress;
+            if (assetInfo[assetName].os === 'Unknown' && osValue) assetInfo[assetName].os = osValue;
+            if (stateValue !== 'Unknown') assetInfo[assetName].status = stateValue;
+          }
+
+          if (lastFound) {
+            const parsed = new Date(lastFound);
+            if (!Number.isNaN(parsed.getTime())) {
+              const key = parsed.toISOString().slice(0, 7);
+              monthCount[key] = (monthCount[key] || 0) + 1;
+              if (!assetInfo[assetName].lastScan || parsed > new Date(assetInfo[assetName].lastScan)) {
+                assetInfo[assetName].lastScan = parsed.toISOString().split('T')[0];
+              }
+            }
+          }
+
+          if (!Number.isNaN(ageValue)) {
+            allAges.push(ageValue);
+            if (ageValue <= 30) sla['Within SLA'] += 1;
+            else if (ageValue <= 60) sla['Near SLA'] += 1;
+            else sla['Breached SLA'] += 1;
+
+            if (ageValue <= 30) aging['0-30 Days'] += 1;
+            else if (ageValue <= 60) aging['31-60 Days'] += 1;
+            else if (ageValue <= 90) aging['61-90 Days'] += 1;
+            else if (ageValue <= 180) aging['91-180 Days'] += 1;
+            else if (ageValue <= 365) aging['180+ Days'] += 1;
+            else aging['365+ Days'] += 1;
+          }
+
+          if (tagsValue) {
+            try {
+              const tags = JSON.parse(tagsValue);
+              if (Array.isArray(tags)) {
+                tags.forEach(tag => {
+                  if (tag.category === 'Server') assetTypes[tag.value] = (assetTypes[tag.value] || 0) + 1;
+                  if (tag.category === 'Location') uniqueLocations[tag.value] = (uniqueLocations[tag.value] || 0) + 1;
+                });
+              }
+            } catch (err) {
+              // ignore invalid tag JSON
+            }
+          }
+
+          topAssets[assetName] = topAssets[assetName] || { Critical: 0, High: 0, Medium: 0, Low: 0 };
+          topAssets[assetName][severityValue] = (topAssets[assetName][severityValue] || 0) + 1;
+
+          const vuln = {
+            pluginId: normalizeText(row['Plugin ID']),
+            pluginName: normalizeText(row['Plugin Name']),
+            severity: severityValue,
+            protocol: normalizeText(row['Protocol']),
+            port: normalizeText(row['Port']),
+            ip: ipAddress,
+            asset: assetName,
+            pluginOutput: normalizeText(row['Plugin Output']),
+            solution: normalizeText(row['Solution']),
+            firstFound: normalizeText(row['First Found']),
+            lastFound,
+            vpr: normalizeText(row['Vulnerability Priority Rating (VPR)']),
+            cve: normalizeText(row['CVE']),
+            description: normalizeText(row['Description']),
+            state: stateValue,
+            age: !Number.isNaN(ageValue) ? ageValue : '',
+            exploitability: exploitValue,
+            tenant: tenantValue,
+          };
+
+          vulnerabilitiesByAsset[assetName] = vulnerabilitiesByAsset[assetName] || [];
+          vulnerabilitiesByAsset[assetName].push(vuln);
+        });
+
+        const assetRows = Object.entries(assetCounts)
+          .sort(([, aCount], [, bCount]) => bCount - aCount)
+          .slice(0, 15)
+          .map(([asset, count]) => {
+            const info = assetInfo[asset] || {};
+            const counts = topAssets[asset] || { Critical: 0, High: 0, Medium: 0, Low: 0 };
+            return {
+              asset,
+              ip: info.ip || 'Unknown',
+              os: info.os || 'Unknown',
+              status: info.status || 'Unknown',
+              lastScan: info.lastScan || 'Unknown',
+              totalVulnerabilities: count,
+              critical: counts.Critical || 0,
+              high: counts.High || 0,
+              medium: counts.Medium || 0,
+              low: counts.Low || 0,
+              risk: (counts.Critical || 0) * 4 + (counts.High || 0) * 2 + (counts.Medium || 0),
+            };
           });
 
-          const trendLabels = Object.keys(data.monthlyTrend).map(key => {
-            const date = new Date(`${key}-01`);
-            return date.toLocaleString('default', { month: 'short', year: 'numeric' });
+        const topServers = Object.entries(assetCounts)
+          .sort(([, aCount], [, bCount]) => bCount - aCount)
+          .slice(0, 10)
+          .map(([asset]) => {
+            const info = assetInfo[asset] || {};
+            const counts = topAssets[asset] || { Critical: 0, High: 0, Medium: 0, Low: 0 };
+            return {
+              asset,
+              ip: info.ip || 'Unknown',
+              os: info.os || 'Unknown',
+              status: info.status || 'Unknown',
+              lastScan: info.lastScan || 'Unknown',
+              vulnerabilities: assetCounts[asset] || 0,
+              critical: counts.Critical || 0,
+              high: counts.High || 0,
+              medium: counts.Medium || 0,
+              low: counts.Low || 0,
+              risk: (counts.Critical || 0) * 4 + (counts.High || 0) * 2 + (counts.Medium || 0),
+            };
           });
 
-          createChart('monthlyTrend', 'line', {
-            labels: trendLabels,
-            datasets: [{
-              label: 'Vulnerabilities',
-              data: Object.values(data.monthlyTrend),
-              borderColor: '#38bdf8',
-              backgroundColor: 'rgba(56,189,248,0.18)',
-              fill: true,
-              tension: 0.35
-            }]
-          });
+        const totalVulnerabilities = rows.length;
+        const severityTotal = Object.values(severity).reduce((total, value) => total + value, 0);
+        const riskScore = Math.round(
+          ((severity.Critical * 100 || 0) + (severity.High * 60 || 0) + (severity.Medium * 30 || 0) + (severity.Low * 10 || 0))
+          / Math.max(1, severityTotal) * 10
+        ) / 10;
+        const complianceScore = Math.round(Math.max(0, 100 - riskScore * 0.7) * 10) / 10;
+        const averageAge = allAges.length ? Math.round(allAges.reduce((sum, value) => sum + value, 0) / allAges.length * 10) / 10 : 0;
+        const patchCompliance = Math.round((100 * ((exploitability['NOT_AVAILABLE'] || 0) / Math.max(1, severityTotal))) * 10) / 10;
 
-          const sortedTopServers = (data.topServers || []).slice().sort((a, b) => b.risk - a.risk);
-          createChart('topServers', 'bar', {
-            labels: sortedTopServers.map(item => item.asset),
-            datasets: [{
-              label: 'Risk Score',
-              data: sortedTopServers.map(item => item.risk),
-              backgroundColor: '#fb7185'
-            }]
-          });
+        return {
+          reportMonth,
+          totalVulnerabilities,
+          totalAssets: Object.keys(assetCounts).length,
+          severity,
+          osDistribution,
+          state,
+          tenant: tenantCount,
+          exploitability,
+          monthlyTrend: monthCount,
+          sla,
+          aging,
+          topServers,
+          assetRows,
+          vulnerabilitiesByAsset,
+          riskScore,
+          complianceScore,
+          averageAge,
+          patchCompliance,
+          internetFacingAssets: 'N/A',
+          assetsByOs: Object.fromEntries(Object.entries(osDistribution).slice(0, 10)),
+          businessRiskByTenant: tenantCount,
+          assetTypes,
+          uniqueLocations,
+        };
+      }
 
-          createChart('assetsByOs', 'pie', {
-            labels: Object.keys(data.osDistribution || {}).slice(0, 8),
-            datasets: [{
-              data: Object.values(data.osDistribution || {}).slice(0, 8),
-              backgroundColor: ['#38bdf8', '#f97316', '#a78bfa', '#22c55e', '#facc15', '#818cf8', '#f472b6', '#22d3ee']
-            }]
-          });
+      async function fetchJson(path) {
+        const response = await fetch(path);
+        if (!response.ok) throw new Error(`Failed to fetch ${path}`);
+        return response.json();
+      }
 
-          createChart('patchCompliance', 'doughnut', {
-            labels: ['Patch Compliant', 'Not Compliant'],
-            datasets: [{
-              data: [data.patchCompliance, Math.max(0, 100 - data.patchCompliance)],
-              backgroundColor: ['#22c55e', '#f97316']
-            }]
-          });
+      function displayVulnerabilitiesForAsset(asset) {
+        if (!currentReportData) return;
+        const vulns = (currentReportData.vulnerabilitiesByAsset?.[asset] || []).slice();
+        if (!vulns.length) {
+          vulnDetailsBody.innerHTML = '<tr><td colspan="7">No vulnerabilities found for this asset.</td></tr>';
+        } else {
+          vulnDetailsBody.innerHTML = vulns.map(v => `
+            <tr>
+              <td>${v.pluginName || v.pluginId || 'Unknown'}</td>
+              <td>${v.severity}</td>
+              <td>${v.protocol || '—'}</td>
+              <td>${v.port || '—'}</td>
+              <td>${formatDate(v.lastFound)}</td>
+              <td>${v.cve || '—'}</td>
+              <td>${v.vpr || '—'}</td>
+            </tr>
+          `).join('');
+        }
+        detailTitle.textContent = `Vulnerability details · ${asset}`;
+        detailPanel.classList.remove('hidden');
+      }
 
-          createChart('slaStatus', 'doughnut', {
-            labels: ['Within SLA', 'Near SLA', 'Breached SLA'],
-            datasets: [{
-              data: [data.sla['Within SLA'] || 0, data.sla['Near SLA'] || 0, data.sla['Breached SLA'] || 0],
-              backgroundColor: ['#22c55e', '#facc15', '#f97316']
-            }]
-          });
+      function displayDashboardData(data) {
+        currentReportData = data;
+        setBadgeText(data.reportMonth || 'Current Report');
 
-          createChart('agingTrend', 'bar', {
-            labels: Object.keys(data.aging),
-            datasets: [{
-              label: 'Vulnerabilities',
-              data: Object.values(data.aging),
-              backgroundColor: '#38bdf8'
-            }]
-          });
+        document.getElementById('kpi-total-assets').textContent = data.totalAssets;
+        document.getElementById('kpi-total-vulns').textContent = data.totalVulnerabilities;
+        document.getElementById('kpi-critical-vulns').textContent = data.severity.Critical || 0;
+        document.getElementById('kpi-high-vulns').textContent = data.severity.High || 0;
+        document.getElementById('kpi-medium-vulns').textContent = data.severity.Medium || 0;
+        document.getElementById('kpi-low-vulns').textContent = data.severity.Low || 0;
+        document.getElementById('kpi-risk-score').textContent = `${data.riskScore} / 100`;
+        document.getElementById('kpi-compliance-score').textContent = `${data.complianceScore}%`;
+        document.getElementById('kpi-sla-compliance').textContent = `${Math.round((data.sla['Within SLA'] || 0) / Math.max(1, data.totalVulnerabilities) * 100)}%`;
+        document.getElementById('kpi-patch-compliance').textContent = `${data.patchCompliance}%`;
+        document.getElementById('kpi-internet-assets').textContent = data.internetFacingAssets ?? 'N/A';
+        document.getElementById('kpi-mttr').textContent = data.averageAge ? `${data.averageAge} days` : 'N/A';
 
-          createChart('businessRisk', 'line', {
-            labels: Object.keys(data.businessRiskByTenant),
-            datasets: [{
-              label: 'Vulnerability Count',
-              data: Object.values(data.businessRiskByTenant),
-              borderColor: '#fb7185',
-              backgroundColor: 'rgba(251,113,133,0.18)',
-              fill: true,
-              tension: 0.35
-            }]
-          });
+        createChart('severityPie', 'doughnut', {
+          labels: ['Critical', 'High', 'Medium', 'Low'],
+          datasets: [{
+            data: [data.severity.Critical || 0, data.severity.High || 0, data.severity.Medium || 0, data.severity.Low || 0],
+            backgroundColor: ['#f97316', '#ef4444', '#38bdf8', '#22c55e'],
+            borderWidth: 0
+          }]
+        });
 
-          const tableBody = document.querySelector('table tbody');
+        const sortedTopServers = (data.topServers || []).slice().sort((a, b) => b.risk - a.risk);
+        createChart('topServers', 'bar', {
+          labels: sortedTopServers.map(item => item.asset),
+          datasets: [{
+            label: 'Risk Score',
+            data: sortedTopServers.map(item => item.risk),
+            backgroundColor: '#fb7185'
+          }]
+        });
+
+        createChart('assetsByOs', 'pie', {
+          labels: Object.keys(data.assetsByOs || {}).slice(0, 8),
+          datasets: [{
+            data: Object.values(data.assetsByOs || {}).slice(0, 8),
+            backgroundColor: ['#38bdf8', '#f97316', '#a78bfa', '#22c55e', '#facc15', '#818cf8', '#f472b6', '#22d3ee']
+          }]
+        });
+
+        createChart('patchCompliance', 'doughnut', {
+          labels: ['Patch Compliant', 'Not Compliant'],
+          datasets: [{
+            data: [data.patchCompliance, Math.max(0, 100 - data.patchCompliance)],
+            backgroundColor: ['#22c55e', '#f97316']
+          }]
+        });
+
+        createChart('slaStatus', 'doughnut', {
+          labels: ['Within SLA', 'Near SLA', 'Breached SLA'],
+          datasets: [{
+            data: [data.sla['Within SLA'] || 0, data.sla['Near SLA'] || 0, data.sla['Breached SLA'] || 0],
+            backgroundColor: ['#22c55e', '#facc15', '#f97316']
+          }]
+        });
+
+        createChart('agingTrend', 'bar', {
+          labels: Object.keys(data.aging),
+          datasets: [{
+            label: 'Vulnerabilities',
+            data: Object.values(data.aging),
+            backgroundColor: '#38bdf8'
+          }]
+        });
+
+        createChart('businessRisk', 'line', {
+          labels: Object.keys(data.businessRiskByTenant),
+          datasets: [{
+            label: 'Vulnerability Count',
+            data: Object.values(data.businessRiskByTenant),
+            borderColor: '#fb7185',
+            backgroundColor: 'rgba(251,113,133,0.18)',
+            fill: true,
+            tension: 0.35
+          }]
+        });
+
+        const tableBody = document.getElementById('assetTableBody');
+        if (tableBody) {
           tableBody.innerHTML = '';
           (data.assetRows || []).slice(0, 8).forEach(item => {
             const criticality = item.critical > 0 ? 'Critical' : item.high > 0 ? 'High' : 'Medium';
@@ -248,14 +533,100 @@
               <td>${item.lastScan || 'Unknown'}</td>
               <td>${item.status || 'Unknown'}</td>
             `;
+            row.style.cursor = 'pointer';
+            row.addEventListener('click', () => displayVulnerabilitiesForAsset(item.asset));
             tableBody.appendChild(row);
           });
+        }
+      }
+
+      async function loadDashboardData(reportPath = 'report-data.json') {
+        try {
+          let data;
+          if (typeof reportPath === 'string' && reportCache[reportPath]) {
+            data = reportCache[reportPath];
+          } else if (typeof reportPath === 'string') {
+            data = await fetchJson(reportPath);
+            reportCache[reportPath] = data;
+          } else {
+            data = reportPath;
+          }
+          displayDashboardData(data);
         } catch (error) {
           console.error('Failed to load dashboard data:', error);
         }
       }
 
-      loadDashboardData();
+      async function loadReportIndex() {
+        try {
+          const index = await fetchJson('report-data-index.json');
+          monthSelect.innerHTML = index.reports
+            .map(report => `<option value="${report.file}">${report.month}</option>`)
+            .join('');
+          monthSelect.value = index.defaultReport;
+          loadDashboardData(index.defaultReport);
+
+          monthSelect.addEventListener('change', event => {
+            loadDashboardData(event.target.value);
+          });
+        } catch (error) {
+          console.error('Failed to load report index:', error);
+          loadDashboardData();
+        }
+      }
+
+      if (closeDetailBtn) {
+        closeDetailBtn.addEventListener('click', () => detailPanel.classList.add('hidden'));
+      }
+
+      function addUploadedReport(reportData, label, reportKey) {
+        reportCache[reportKey] = reportData;
+        const option = document.createElement('option');
+        option.value = reportKey;
+        option.textContent = label;
+        monthSelect.appendChild(option);
+        monthSelect.value = reportKey;
+        loadDashboardData(reportKey);
+      }
+
+      function parseUploadedFile(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = event => {
+            try {
+              const workbook = XLSX.read(event.target.result, { type: 'array' });
+              const sheetName = workbook.SheetNames.find(name => name.includes('Vulnerabilities_All Clients')) || workbook.SheetNames[0];
+              const sheet = workbook.Sheets[sheetName];
+              const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+              resolve(rows);
+            } catch (err) {
+              reject(err);
+            }
+          };
+          reader.onerror = reject;
+          reader.readAsArrayBuffer(file);
+        });
+      }
+
+      reportUpload.addEventListener('change', async event => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        try {
+          const rows = await parseUploadedFile(file);
+          const reportMonth = parseMonthFromFileName(file.name);
+          const reportKey = `uploaded-${Date.now()}`;
+          const reportData = buildReportDataFromRows(rows, reportMonth);
+          addUploadedReport(reportData, reportMonth, reportKey);
+        } catch (error) {
+          console.error('Upload parse failed:', error);
+          alert('Unable to parse the uploaded XLSX file. Please verify the format.');
+        } finally {
+          reportUpload.value = '';
+        }
+      });
+
+      loadReportIndex();
     </script>
   </body>
 </html>
