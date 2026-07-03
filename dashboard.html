@@ -6,7 +6,6 @@
     <title>Compliance Dashboard</title>
     <link rel="stylesheet" href="style.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   </head>
   <body>
     <div class="dashboard-shell">
@@ -17,6 +16,30 @@
         </div>
         <button id="logoutBtn">Log Out</button>
       </header>
+
+      <section class="dashboard-hero">
+        <article class="card hero-card">
+          <div class="hero-copy">
+            <p class="eyebrow">Threat command center</p>
+            <h2>Live vulnerability posture with executive-grade context</h2>
+            <p class="hero-text">Monitor critical assets, surface top risk hosts, and follow remediation progress with a security-first dashboard.</p>
+          </div>
+          <div class="hero-metrics">
+            <div>
+              <span>Platform Status</span>
+              <strong>Operational</strong>
+            </div>
+            <div>
+              <span>Security Mode</span>
+              <strong>Active Defense</strong>
+            </div>
+            <div>
+              <span>Data Refresh</span>
+              <strong>Live</strong>
+            </div>
+          </div>
+        </article>
+      </section>
 
       <main>
         <section class="card kpi-panel">
@@ -29,10 +52,6 @@
                 <div class="month-filter">
                   <label for="reportMonth">Select month:</label>
                   <select id="reportMonth"></select>
-                </div>
-                <div class="upload-filter">
-                  <label for="reportUpload">Upload report:</label>
-                  <input id="reportUpload" type="file" accept=".xlsx" />
                 </div>
               </div>
             </div>
@@ -157,7 +176,6 @@
       }
 
       const monthSelect = document.getElementById('reportMonth');
-      const reportUpload = document.getElementById('reportUpload');
       const detailPanel = document.getElementById('assetDetailPanel');
       const closeDetailBtn = document.getElementById('closeDetailBtn');
       const detailTitle = document.getElementById('detailTitle');
@@ -204,208 +222,6 @@
 
       function normalizeText(value) {
         return value == null ? '' : String(value).trim();
-      }
-
-      function parseMonthFromFileName(filename) {
-        const match = filename.match(/([A-Za-z]+)\s*(\d{4})/);
-        if (match) {
-          const [, monthName, year] = match;
-          const parsed = new Date(`${monthName} 1, ${year}`);
-          if (!Number.isNaN(parsed.getTime())) {
-            return `${parsed.toLocaleString('default', { month: 'long' })} ${parsed.getFullYear()}`;
-          }
-        }
-        return `Uploaded ${new Date().toLocaleDateString()}`;
-      }
-
-      function buildReportDataFromRows(rows, reportMonth) {
-        const severity = { Critical: 0, High: 0, Medium: 0, Low: 0, Unknown: 0 };
-        const osDistribution = {};
-        const state = {};
-        const tenantCount = {};
-        const exploitability = {};
-        const monthCount = {};
-        const sla = { 'Within SLA': 0, 'Near SLA': 0, 'Breached SLA': 0 };
-        const aging = { '0-30 Days': 0, '31-60 Days': 0, '61-90 Days': 0, '91-180 Days': 0, '180+ Days': 0, '365+ Days': 0 };
-        const topAssets = {};
-        const assetCounts = {};
-        const assetInfo = {};
-        const uniqueLocations = {};
-        const assetTypes = {};
-        const allAges = [];
-        const vulnerabilitiesByAsset = {};
-
-        rows.forEach(row => {
-          const assetName = normalizeText(row['Assetname'] || row['Asset Name'] || row['Host'] || row['IP Address'] || 'Unknown');
-          const severityValue = normalizeText(row['Severity']) || 'Unknown';
-          const osValue = normalizeText(row['OS']) || 'Unknown';
-          const stateValue = normalizeText(row['state']) || 'Unknown';
-          const tenantValue = normalizeText(row['Tenant']) || 'Unknown';
-          const exploitValue = normalizeText(row['Exploitability']) || 'Unknown';
-          const tagsValue = normalizeText(row['asset.tags']);
-          const ageValue = parseInt(row['age_in_days'], 10);
-          const lastFound = normalizeText(row['Last Found']);
-          const ipAddress = normalizeText(row['IP Address']);
-
-          severity[severityValue] = (severity[severityValue] || 0) + 1;
-          osDistribution[osValue] = (osDistribution[osValue] || 0) + 1;
-          state[stateValue] = (state[stateValue] || 0) + 1;
-          tenantCount[tenantValue] = (tenantCount[tenantValue] || 0) + 1;
-          exploitability[exploitValue] = (exploitability[exploitValue] || 0) + 1;
-          assetCounts[assetName] = (assetCounts[assetName] || 0) + 1;
-
-          if (!assetInfo[assetName]) {
-            assetInfo[assetName] = { ip: ipAddress || 'Unknown', os: osValue, status: stateValue, lastScan: null };
-          } else {
-            if (assetInfo[assetName].ip === 'Unknown' && ipAddress) assetInfo[assetName].ip = ipAddress;
-            if (assetInfo[assetName].os === 'Unknown' && osValue) assetInfo[assetName].os = osValue;
-            if (stateValue !== 'Unknown') assetInfo[assetName].status = stateValue;
-          }
-
-          if (lastFound) {
-            const parsed = new Date(lastFound);
-            if (!Number.isNaN(parsed.getTime())) {
-              const key = parsed.toISOString().slice(0, 7);
-              monthCount[key] = (monthCount[key] || 0) + 1;
-              if (!assetInfo[assetName].lastScan || parsed > new Date(assetInfo[assetName].lastScan)) {
-                assetInfo[assetName].lastScan = parsed.toISOString().split('T')[0];
-              }
-            }
-          }
-
-          if (!Number.isNaN(ageValue)) {
-            allAges.push(ageValue);
-            if (ageValue <= 30) sla['Within SLA'] += 1;
-            else if (ageValue <= 60) sla['Near SLA'] += 1;
-            else sla['Breached SLA'] += 1;
-
-            if (ageValue <= 30) aging['0-30 Days'] += 1;
-            else if (ageValue <= 60) aging['31-60 Days'] += 1;
-            else if (ageValue <= 90) aging['61-90 Days'] += 1;
-            else if (ageValue <= 180) aging['91-180 Days'] += 1;
-            else if (ageValue <= 365) aging['180+ Days'] += 1;
-            else aging['365+ Days'] += 1;
-          }
-
-          if (tagsValue) {
-            try {
-              const tags = JSON.parse(tagsValue);
-              if (Array.isArray(tags)) {
-                tags.forEach(tag => {
-                  if (tag.category === 'Server') assetTypes[tag.value] = (assetTypes[tag.value] || 0) + 1;
-                  if (tag.category === 'Location') uniqueLocations[tag.value] = (uniqueLocations[tag.value] || 0) + 1;
-                });
-              }
-            } catch (err) {
-              // ignore invalid tag JSON
-            }
-          }
-
-          topAssets[assetName] = topAssets[assetName] || { Critical: 0, High: 0, Medium: 0, Low: 0 };
-          topAssets[assetName][severityValue] = (topAssets[assetName][severityValue] || 0) + 1;
-
-          const vuln = {
-            pluginId: normalizeText(row['Plugin ID']),
-            pluginName: normalizeText(row['Plugin Name']),
-            severity: severityValue,
-            protocol: normalizeText(row['Protocol']),
-            port: normalizeText(row['Port']),
-            ip: ipAddress,
-            asset: assetName,
-            pluginOutput: normalizeText(row['Plugin Output']),
-            solution: normalizeText(row['Solution']),
-            firstFound: normalizeText(row['First Found']),
-            lastFound,
-            vpr: normalizeText(row['Vulnerability Priority Rating (VPR)']),
-            cve: normalizeText(row['CVE']),
-            description: normalizeText(row['Description']),
-            state: stateValue,
-            age: !Number.isNaN(ageValue) ? ageValue : '',
-            exploitability: exploitValue,
-            tenant: tenantValue,
-          };
-
-          vulnerabilitiesByAsset[assetName] = vulnerabilitiesByAsset[assetName] || [];
-          vulnerabilitiesByAsset[assetName].push(vuln);
-        });
-
-        const assetRows = Object.entries(assetCounts)
-          .sort(([, aCount], [, bCount]) => bCount - aCount)
-          .slice(0, 15)
-          .map(([asset, count]) => {
-            const info = assetInfo[asset] || {};
-            const counts = topAssets[asset] || { Critical: 0, High: 0, Medium: 0, Low: 0 };
-            return {
-              asset,
-              ip: info.ip || 'Unknown',
-              os: info.os || 'Unknown',
-              status: info.status || 'Unknown',
-              lastScan: info.lastScan || 'Unknown',
-              totalVulnerabilities: count,
-              critical: counts.Critical || 0,
-              high: counts.High || 0,
-              medium: counts.Medium || 0,
-              low: counts.Low || 0,
-              risk: (counts.Critical || 0) * 4 + (counts.High || 0) * 2 + (counts.Medium || 0),
-            };
-          });
-
-        const topServers = Object.entries(assetCounts)
-          .sort(([, aCount], [, bCount]) => bCount - aCount)
-          .slice(0, 10)
-          .map(([asset]) => {
-            const info = assetInfo[asset] || {};
-            const counts = topAssets[asset] || { Critical: 0, High: 0, Medium: 0, Low: 0 };
-            return {
-              asset,
-              ip: info.ip || 'Unknown',
-              os: info.os || 'Unknown',
-              status: info.status || 'Unknown',
-              lastScan: info.lastScan || 'Unknown',
-              vulnerabilities: assetCounts[asset] || 0,
-              critical: counts.Critical || 0,
-              high: counts.High || 0,
-              medium: counts.Medium || 0,
-              low: counts.Low || 0,
-              risk: (counts.Critical || 0) * 4 + (counts.High || 0) * 2 + (counts.Medium || 0),
-            };
-          });
-
-        const totalVulnerabilities = rows.length;
-        const severityTotal = Object.values(severity).reduce((total, value) => total + value, 0);
-        const riskScore = Math.round(
-          ((severity.Critical * 100 || 0) + (severity.High * 60 || 0) + (severity.Medium * 30 || 0) + (severity.Low * 10 || 0))
-          / Math.max(1, severityTotal) * 10
-        ) / 10;
-        const complianceScore = Math.round(Math.max(0, 100 - riskScore * 0.7) * 10) / 10;
-        const averageAge = allAges.length ? Math.round(allAges.reduce((sum, value) => sum + value, 0) / allAges.length * 10) / 10 : 0;
-        const patchCompliance = Math.round((100 * ((exploitability['NOT_AVAILABLE'] || 0) / Math.max(1, severityTotal))) * 10) / 10;
-
-        return {
-          reportMonth,
-          totalVulnerabilities,
-          totalAssets: Object.keys(assetCounts).length,
-          severity,
-          osDistribution,
-          state,
-          tenant: tenantCount,
-          exploitability,
-          monthlyTrend: monthCount,
-          sla,
-          aging,
-          topServers,
-          assetRows,
-          vulnerabilitiesByAsset,
-          riskScore,
-          complianceScore,
-          averageAge,
-          patchCompliance,
-          internetFacingAssets: 'N/A',
-          assetsByOs: Object.fromEntries(Object.entries(osDistribution).slice(0, 10)),
-          businessRiskByTenant: tenantCount,
-          assetTypes,
-          uniqueLocations,
-        };
       }
 
       async function fetchJson(path) {
@@ -578,53 +394,6 @@
       if (closeDetailBtn) {
         closeDetailBtn.addEventListener('click', () => detailPanel.classList.add('hidden'));
       }
-
-      function addUploadedReport(reportData, label, reportKey) {
-        reportCache[reportKey] = reportData;
-        const option = document.createElement('option');
-        option.value = reportKey;
-        option.textContent = label;
-        monthSelect.appendChild(option);
-        monthSelect.value = reportKey;
-        loadDashboardData(reportKey);
-      }
-
-      function parseUploadedFile(file) {
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = event => {
-            try {
-              const workbook = XLSX.read(event.target.result, { type: 'array' });
-              const sheetName = workbook.SheetNames.find(name => name.includes('Vulnerabilities_All Clients')) || workbook.SheetNames[0];
-              const sheet = workbook.Sheets[sheetName];
-              const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-              resolve(rows);
-            } catch (err) {
-              reject(err);
-            }
-          };
-          reader.onerror = reject;
-          reader.readAsArrayBuffer(file);
-        });
-      }
-
-      reportUpload.addEventListener('change', async event => {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        try {
-          const rows = await parseUploadedFile(file);
-          const reportMonth = parseMonthFromFileName(file.name);
-          const reportKey = `uploaded-${Date.now()}`;
-          const reportData = buildReportDataFromRows(rows, reportMonth);
-          addUploadedReport(reportData, reportMonth, reportKey);
-        } catch (error) {
-          console.error('Upload parse failed:', error);
-          alert('Unable to parse the uploaded XLSX file. Please verify the format.');
-        } finally {
-          reportUpload.value = '';
-        }
-      });
 
       loadReportIndex();
     </script>

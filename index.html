@@ -3,24 +3,50 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Compliance Login</title>
+    <title>CyberSecure Access</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <div class="login-shell">
-      <div class="login-card">
-        <h1>Compliance Portal</h1>
-        <p>Sign in with your user credentials.</p>
-        <form id="loginForm">
+      <div class="login-panel">
+        <div class="login-brand">
+          <div class="brand-mark">CS</div>
+          <div>
+            <h1>CyberSecure Access</h1>
+            <p>Fast, dynamic access to your vulnerability command center.</p>
+          </div>
+        </div>
+
+        <div class="login-alert">
+          <span class="alert-dot"></span>
+          <p>Secure entry point enabled. Authenticate to continue to the executive dashboard.</p>
+        </div>
+
+        <form id="loginForm" class="login-form">
           <label for="email">User ID</label>
-          <input id="email" name="email" type="email" placeholder="Enter your user ID" required />
+          <input id="email" name="email" type="email" placeholder="security.admin" autocomplete="username" required />
 
           <label for="password">Password</label>
-          <input id="password" name="password" type="password" placeholder="Enter your password" required />
+          <input id="password" name="password" type="password" placeholder="••••••••••" autocomplete="current-password" required />
 
-          <button type="submit">Log In</button>
+          <div class="login-meta">
+            <label class="remember-me">
+              <input type="checkbox" id="remember" />
+              Remember me
+            </label>
+            <a href="#" class="help-link">Need help?</a>
+          </div>
+
+          <button type="submit" class="primary-btn">Secure Sign In</button>
           <div id="validationMessage" class="message"></div>
         </form>
+
+        <div class="security-footnote">
+          <p>Enhanced session protection with real-time monitoring and compliance-aware access.</p>
+        </div>
       </div>
     </div>
 
