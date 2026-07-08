@@ -6,6 +6,7 @@
     <title>Compliance Dashboard</title>
     <link rel="stylesheet" href="style.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.18.3/package/dist/xlsx.full.min.js"></script>
   </head>
   <body>
     <div class="dashboard-shell">
@@ -40,8 +41,8 @@
                   <select id="reportMonth"></select>
                 </div>
                 <div class="upload-panel">
-                  <label for="dataUpload" class="upload-button">Upload JSON</label>
-                  <input id="dataUpload" type="file" accept="application/json" />
+                  <label for="dataUpload" class="upload-button">Upload Excel</label>
+                  <input id="dataUpload" type="file" accept=".xlsx,.xls,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" />
                   <span id="uploadStatus" class="upload-status"></span>
                 </div>
               </div>
@@ -475,6 +476,258 @@
         monthSelect.value = defaultKey || '2026-06';
       }
 
+      function toNumber(value) {
+        const parsed = Number.parseFloat(value);
+        return Number.isFinite(parsed) ? parsed : 0;
+      }
+
+      function normalizeString(value) {
+        if (value === null || value === undefined) return '';
+        return String(value).trim();
+      }
+
+      function createCounter() {
+        return {};
+      }
+
+      function incrementCounter(counter, key, amount = 1) {
+        const normalizedKey = normalizeString(key) || 'Unknown';
+        counter[normalizedKey] = (counter[normalizedKey] || 0) + amount;
+      }
+
+      function parseMonthFromFileName(fileName) {
+        const match = fileName.match(/([A-Za-z]+)\s+(\d{4})/);
+        if (match) {
+          const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+          const monthIndex = monthNames.indexOf(match[1]);
+          if (monthIndex >= 0) {
+            return `${match[2]}-${String(monthIndex + 1).padStart(2, '0')}`;
+          }
+        }
+
+        const fallback = fileName.match(/(\d{4})[-_.](\d{1,2})/);
+        if (fallback) {
+          return `${fallback[1]}-${String(Number(fallback[2])).padStart(2, '0')}`;
+        }
+
+        return null;
+      }
+
+      function buildReportDataFromWorkbook(rows, fileName) {
+        const severity = createCounter();
+        const osCount = createCounter();
+        const stateCount = createCounter();
+        const assetCounts = createCounter();
+        const tenantCount = createCounter();
+        const exploitability = createCounter();
+        const agingBuckets = createCounter();
+        const slaBuckets = createCounter();
+        const topAssets = {};
+        const assetInfo = {};
+        const vulnsByAsset = {};
+        const allAges = [];
+        const assetTypes = createCounter();
+        const uniqueLocations = createCounter();
+        let severityTotal = 0;
+
+        rows.forEach(row => {
+          const severityValue = normalizeString(row['Severity']) || 'Unknown';
+          incrementCounter(severity, severityValue);
+          severityTotal += 1;
+
+          const osValue = normalizeString(row['OS']) || 'Unknown';
+          incrementCounter(osCount, osValue);
+
+          const assetName = normalizeString(row['Assetname']) || normalizeString(row['IP Address']) || 'Unknown';
+          incrementCounter(assetCounts, assetName);
+
+          const stateValue = normalizeString(row['state']) || 'Unknown';
+          incrementCounter(stateCount, stateValue);
+
+          const tenantValue = normalizeString(row['Tenant']) || 'Unknown';
+          incrementCounter(tenantCount, tenantValue);
+
+          const exploitabilityValue = normalizeString(row['Exploitability']) || 'Unknown';
+          incrementCounter(exploitability, exploitabilityValue);
+
+          if (!assetInfo[assetName]) {
+            assetInfo[assetName] = {
+              ip: normalizeString(row['IP Address']) || 'Unknown',
+              os: osValue,
+              status: stateValue,
+              lastScan: null,
+            };
+          } else {
+            if (!assetInfo[assetName].ip || assetInfo[assetName].ip === 'Unknown') {
+              assetInfo[assetName].ip = normalizeString(row['IP Address']) || 'Unknown';
+            }
+            if (!assetInfo[assetName].os || assetInfo[assetName].os === 'Unknown') {
+              assetInfo[assetName].os = osValue;
+            }
+            if (stateValue !== 'Unknown') {
+              assetInfo[assetName].status = stateValue;
+            }
+          }
+
+          const ageValue = Number.parseInt(normalizeString(row['age_in_days']), 10);
+          if (!Number.isNaN(ageValue)) {
+            allAges.push(ageValue);
+            if (ageValue <= 30) {
+              incrementCounter(slaBuckets, 'Within SLA');
+              incrementCounter(agingBuckets, '0-30 Days');
+            } else if (ageValue <= 60) {
+              incrementCounter(slaBuckets, 'Near SLA');
+              incrementCounter(agingBuckets, '31-60 Days');
+            } else {
+              incrementCounter(slaBuckets, 'Breached SLA');
+              if (ageValue <= 90) {
+                incrementCounter(agingBuckets, '61-90 Days');
+              } else if (ageValue <= 180) {
+                incrementCounter(agingBuckets, '91-180 Days');
+              } else if (ageValue <= 365) {
+                incrementCounter(agingBuckets, '180+ Days');
+              } else {
+                incrementCounter(agingBuckets, '365+ Days');
+              }
+            }
+          }
+
+          const lastFound = normalizeString(row['Last Found']);
+          if (lastFound) {
+            const parsedDate = new Date(lastFound);
+            if (!Number.isNaN(parsedDate.getTime())) {
+              const currentLast = assetInfo[assetName].lastScan;
+              if (!currentLast || parsedDate > currentLast) {
+                assetInfo[assetName].lastScan = parsedDate;
+              }
+            }
+          }
+
+          if (!topAssets[assetName]) {
+            topAssets[assetName] = createCounter();
+          }
+          incrementCounter(topAssets[assetName], severityValue);
+
+          const tagsValue = normalizeString(row['asset.tags']);
+          if (tagsValue) {
+            try {
+              const tags = JSON.parse(tagsValue);
+              tags.forEach(tag => {
+                const category = normalizeString(tag?.category);
+                const value = normalizeString(tag?.value) || 'Unknown';
+                if (category === 'Server') {
+                  incrementCounter(assetTypes, value);
+                }
+                if (category === 'Location') {
+                  incrementCounter(uniqueLocations, value);
+                }
+              });
+            } catch (error) {
+              console.warn('Unable to parse asset tags:', error);
+            }
+          }
+
+          const vuln = {
+            pluginId: normalizeString(row['Plugin ID']),
+            pluginName: normalizeString(row['Plugin Name']),
+            severity: severityValue,
+            protocol: normalizeString(row['Protocol']),
+            port: normalizeString(row['Port']),
+            ip: normalizeString(row['IP Address']),
+            asset: assetName,
+            pluginOutput: normalizeString(row['Plugin Output']),
+            solution: normalizeString(row['Solution']),
+            firstFound: normalizeString(row['First Found']),
+            lastFound,
+            vpr: normalizeString(row['Vulnerability Priority Rating (VPR)']),
+            cve: normalizeString(row['CVE']),
+            description: normalizeString(row['Description']),
+            state: stateValue,
+            age: normalizeString(row['age_in_days']),
+            exploitability: exploitabilityValue,
+            tenant: tenantValue,
+          };
+
+          if (!vulnsByAsset[assetName]) {
+            vulnsByAsset[assetName] = [];
+          }
+          vulnsByAsset[assetName].push(vuln);
+        });
+
+        const assetRows = Object.entries(assetCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 15)
+          .map(([asset, count]) => {
+            const info = assetInfo[asset] || {};
+            const assetTop = topAssets[asset] || {};
+            return {
+              asset,
+              ip: info.ip || 'Unknown',
+              os: info.os || 'Unknown',
+              status: info.status || 'Unknown',
+              lastScan: info.lastScan ? info.lastScan.toISOString().split('T')[0] : 'Unknown',
+              totalVulnerabilities: count,
+              critical: assetTop.Critical || 0,
+              high: assetTop.High || 0,
+              medium: assetTop.Medium || 0,
+              low: assetTop.Low || 0,
+              risk: (assetTop.Critical || 0) * 4 + (assetTop.High || 0) * 2 + (assetTop.Medium || 0),
+            };
+          });
+
+        const topServers = Object.entries(assetCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10)
+          .map(([asset, count]) => {
+            const info = assetInfo[asset] || {};
+            const assetTop = topAssets[asset] || {};
+            return {
+              asset,
+              ip: info.ip || 'Unknown',
+              os: info.os || 'Unknown',
+              status: info.status || 'Unknown',
+              lastScan: info.lastScan ? info.lastScan.toISOString().split('T')[0] : 'Unknown',
+              vulnerabilities: count,
+              critical: assetTop.Critical || 0,
+              high: assetTop.High || 0,
+              medium: assetTop.Medium || 0,
+              low: assetTop.Low || 0,
+              risk: (assetTop.Critical || 0) * 4 + (assetTop.High || 0) * 2 + (assetTop.Medium || 0),
+            };
+          });
+
+        const riskScore = severityTotal ? Math.round(((severity.Critical || 0) * 100 + (severity.High || 0) * 60 + (severity.Medium || 0) * 30 + (severity.Low || 0) * 10) / severityTotal * 10) / 10 : 0;
+        const complianceScore = Math.max(0, Math.round(100 - (riskScore * 0.7) * 10) / 10);
+        const averageAge = allAges.length ? Math.round((allAges.reduce((sum, age) => sum + age, 0) / allAges.length) * 10) / 10 : 0;
+        const patchCompliance = severityTotal ? Math.round(100 * ((exploitability.NOT_AVAILABLE || 0) / severityTotal) * 10) / 10 : 0;
+        const monthKey = parseMonthFromFileName(fileName);
+        const reportMonthLabel = monthKey ? allMonths2026.find(item => item.key === monthKey)?.label || monthKey.replace('-', ' ') : 'Uploaded Excel';
+
+        return {
+          totalVulnerabilities: severityTotal,
+          totalAssets: Object.keys(assetCounts).length,
+          severity,
+          osDistribution: osCount,
+          state: stateCount,
+          tenant: tenantCount,
+          sla: slaBuckets,
+          aging: agingBuckets,
+          topServers,
+          assetRows,
+          riskScore,
+          complianceScore,
+          averageAge,
+          patchCompliance,
+          assetsByOs: Object.fromEntries(Object.entries(osCount).sort((a, b) => b[1] - a[1]).slice(0, 10)),
+          businessRiskByTenant: tenantCount,
+          assetTypes,
+          uniqueLocations,
+          reportMonth: reportMonthLabel,
+          vulnerabilitiesByAsset: vulnsByAsset,
+          internetFacingAssets: Object.keys(assetCounts).length,
+        };
+      }
+
       function getUploadMonthKey(data) {
         if (data.reportMonth) {
           return monthKeyFromReportMonth(data.reportMonth);
@@ -483,30 +736,53 @@
       }
 
       async function handleUploadFile(file) {
-        if (!file.name.toLowerCase().endsWith('.json')) {
-          setUploadStatus('Please upload a JSON file.', true);
+        const allowedExtensions = ['.xlsx', '.xls', '.xlsm'];
+        const fileName = file.name.toLowerCase();
+        if (!allowedExtensions.some(extension => fileName.endsWith(extension))) {
+          setUploadStatus('Please upload an Excel file (.xlsx, .xls, or .xlsm).', true);
           return;
         }
 
-        let fileText;
+        let arrayBuffer;
         try {
-          fileText = await file.text();
+          arrayBuffer = await file.arrayBuffer();
         } catch (error) {
-          setUploadStatus('Unable to read the file.', true);
+          setUploadStatus('Unable to read the Excel file.', true);
           return;
         }
 
-        let data;
+        let workbook;
         try {
-          data = JSON.parse(fileText);
+          workbook = XLSX.read(arrayBuffer, { type: 'array' });
         } catch (error) {
-          setUploadStatus('Invalid JSON file.', true);
+          setUploadStatus('Unable to parse the Excel workbook.', true);
           return;
         }
 
-        const monthKey = getUploadMonthKey(data);
+        const sheetName = workbook.SheetNames.find(name => name === 'Vulnerabilities_All Clients') || workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        if (!worksheet) {
+          setUploadStatus('The workbook does not contain a readable worksheet.', true);
+          return;
+        }
+
+        let rows;
+        try {
+          rows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+        } catch (error) {
+          setUploadStatus('Unable to convert the worksheet to rows.', true);
+          return;
+        }
+
+        if (!rows.length) {
+          setUploadStatus('The selected Excel file has no data rows.', true);
+          return;
+        }
+
+        const data = buildReportDataFromWorkbook(rows, file.name);
+        const monthKey = getUploadMonthKey(data) || parseMonthFromFileName(file.name);
         if (!monthKey) {
-          setUploadStatus('JSON must include a reportMonth value like "May 2026".', true);
+          setUploadStatus('Unable to determine the report month from the Excel filename.', true);
           return;
         }
 
