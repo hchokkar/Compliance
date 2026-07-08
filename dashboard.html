@@ -190,6 +190,23 @@
       const reportDetailsPaths = {};
       const reportIndexMap = {};
       const uploadedReports = {};
+
+      // Load any previously uploaded reports from localStorage so data persists across reloads
+      (function loadUploadedFromStorage() {
+        try {
+          Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('uploadedReport:')) {
+              const monthKey = key.split(':')[1];
+              const raw = localStorage.getItem(key);
+              if (raw) {
+                uploadedReports[monthKey] = JSON.parse(raw);
+              }
+            }
+          });
+        } catch (e) {
+          console.warn('Unable to load uploaded reports from storage', e);
+        }
+      })();
       const chartInstances = {};
       const allMonths2026 = [
         { key: '2026-01', label: 'January 2026' },
@@ -785,8 +802,35 @@
           setUploadStatus('Unable to determine the report month from the Excel filename.', true);
           return;
         }
-
         uploadedReports[monthKey] = data;
+        // persist uploaded report so it survives a page reload
+        try {
+          localStorage.setItem(`uploadedReport:${monthKey}`, JSON.stringify(data));
+        } catch (e) {
+          console.warn('Unable to persist uploaded report to localStorage', e);
+        }
+
+        // offer the generated JSON files for download (summary + details)
+        try {
+          const summary = Object.assign({}, data);
+          delete summary.vulnerabilitiesByAsset;
+          const details = { reportMonth: data.reportMonth, vulnerabilitiesByAsset: data.vulnerabilitiesByAsset || {} };
+          function downloadJSON(filename, obj) {
+            const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+          }
+          downloadJSON(`report-data-${monthKey}.json`, summary);
+          downloadJSON(`report-data-${monthKey}-details.json`, details);
+        } catch (e) {
+          console.warn('Unable to trigger download of generated JSON files', e);
+        }
         buildMonthOptions(monthKey);
         monthSelect.value = monthKey;
         setUploadStatus(`Loaded ${file.name} for ${allMonths2026.find(item => item.key === monthKey)?.label || monthKey}`);

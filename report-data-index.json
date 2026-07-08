@@ -1,6 +1,27 @@
 {
   "reports": [
     {
+      "month": "January 2026",
+      "key": "2026-01",
+      "file": "report-data-2026-01.json",
+      "detailsFile": "report-data-2026-01-details.json",
+      "date": "2026-01-01T00:00:00"
+    },
+    {
+      "month": "February 2026",
+      "key": "2026-02",
+      "file": "report-data-2026-02.json",
+      "detailsFile": "report-data-2026-02-details.json",
+      "date": "2026-02-01T00:00:00"
+    },
+    {
+      "month": "April 2026",
+      "key": "2026-04",
+      "file": "report-data-2026-04.json",
+      "detailsFile": "report-data-2026-04-details.json",
+      "date": "2026-04-01T00:00:00"
+    },
+    {
       "month": "May 2026",
       "key": "2026-05",
       "file": "report-data-2026-05.json",

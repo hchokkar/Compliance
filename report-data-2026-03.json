@@ -1,0 +1,23 @@
+{
+  "totalVulnerabilities": 0,
+  "totalAssets": 0,
+  "severity": {"Critical": 0, "High": 0, "Medium": 0, "Low": 0},
+  "osDistribution": {},
+  "state": {},
+  "tenant": {},
+  "exploitability": {},
+  "monthlyTrend": {},
+  "sla": {"Within SLA": 0, "Near SLA": 0, "Breached SLA": 0},
+  "aging": {},
+  "topServers": [],
+  "assetRows": [],
+  "riskScore": 0,
+  "complianceScore": 0,
+  "averageAge": 0,
+  "patchCompliance": 0,
+  "assetsByOs": {},
+  "businessRiskByTenant": {},
+  "assetTypes": {},
+  "uniqueLocations": {},
+  "reportMonth": "March 2026"
+}

@@ -18,7 +18,17 @@ def parse_report_month(file_path: Path):
     if not match:
         raise ValueError(f'Unable to parse month from filename: {file_path.name}')
     month_name, year = match.groups()
-    return datetime.strptime(f'{month_name} {year}', '%B %Y')
+    # Accept full month names (e.g., 'February') and abbreviated names (e.g., 'Feb')
+    for fmt in ('%B %Y', '%b %Y'):
+        try:
+            return datetime.strptime(f'{month_name} {year}', fmt)
+        except ValueError:
+            continue
+    # Try title-casing the month name as a last resort
+    try:
+        return datetime.strptime(f'{month_name.title()} {year}', '%B %Y')
+    except ValueError:
+        raise ValueError(f'Unable to parse month from filename: {file_path.name}')
 
 
 def build_report_data(file_path: Path):
@@ -232,7 +242,11 @@ if not REPORT_DIR.exists() or not any(REPORT_DIR.glob('*.xlsx')):
 reports = []
 for report_path in sorted(REPORT_DIR.glob('*.xlsx')):
     month_dt = parse_report_month(report_path)
-    report_summary, report_details, month_dt = build_report_data(report_path)
+    try:
+        report_summary, report_details, month_dt = build_report_data(report_path)
+    except Exception as e:
+        print(f'Warning: skipping {report_path.name}: {e}')
+        continue
     month_key = month_dt.strftime('%Y-%m')
     output_file = Path(f'report-data-{month_key}.json')
     details_file = Path(f'report-data-{month_key}-details.json')
